@@ -13,7 +13,7 @@ class FlipFlop extends Component
 
     public function render()
     {
-        $users = User::all();
+        $users = User::all()->take(2);
 
         if (count($users) !== 2) {
             return view('livewire.empty');

@@ -32,6 +32,10 @@ class FlipFlop extends Component
 
     public function flipflop(User $turnToPay, User $paidLast)
     {
+        if (!Auth::check()) {
+            return false;
+        }
+
         $currentUser = Auth::user();
         if (!$currentUser->canFlip) {
             return false;

@@ -1,9 +1,10 @@
 <?php
 
-use App\Http\Controllers\AuthenticationController;
-use App\Http\Controllers\RegistrationController;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\RegistrationController;
+use App\Http\Controllers\AuthenticationController;
 
 Route::get('/', function () {
     return view('home');

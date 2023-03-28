@@ -15,6 +15,10 @@ class FlipFlop extends Component
     {
         $users = User::all();
 
+        if (count($users) !== 2) {
+            return view('livewire.empty');
+        }
+
         foreach ($users as $user) {
             if ($user->canFlip === 1) {
                 $this->turnToPay = $user;

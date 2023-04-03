@@ -26,12 +26,12 @@
 </head>
 
 <body class="h-full">
-    <nav class="w-full relative top-0 flex justify-end pt-2">
+    <nav class="w-full absolute top-0 flex justify-end pt-2">
         @auth
             <a href="/logout" class="px-4 py-2 rounded-md bg-slate-200 mr-2">Logout</a>
         @endauth
     </nav>
-    <div class="relative flex flex-col justify-center h-[calc(100vh-48px)] px-4 py-12 sm:px-6 lg:px-8">
+    <div class="relative flex flex-col justify-center h-full px-4 py-12 sm:px-6 lg:px-8">
         @yield('content')
     </div>
 

@@ -46,4 +46,21 @@ class FlipFlop extends Component
         $paidLast->canFlip = 1;
         $paidLast->save();
     }
+
+    public function fetchData()
+    {
+        $users = User::all()->take(2);
+
+        if (count($users) !== 2) {
+            return false;
+        }
+
+        foreach ($users as $user) {
+            if ($user->canFlip === 1) {
+                $this->turnToPay = $user;
+            } else {
+                $this->paidLast = $user;
+            }
+        }
+    }
 }

@@ -26,9 +26,11 @@
 </head>
 
 <body class="h-full">
-    <nav class="w-full absolute top-0 flex justify-end pt-2">
+    <nav class="w-full absolute top-0 flex justify-end pt-2 z-50">
         @auth
             <a href="/logout" class="px-4 py-2 rounded-md bg-slate-200 mr-2">Logout</a>
+        @else
+            <a href="/auth" class="px-4 py-2 rounded-md bg-slate-200 mr-2">Auth</a>
         @endauth
     </nav>
     <div class="relative flex flex-col justify-center h-full px-4 py-12 sm:px-6 lg:px-8">

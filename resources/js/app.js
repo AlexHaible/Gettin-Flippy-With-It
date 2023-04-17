@@ -63,8 +63,6 @@ document.addEventListener('alpine:init', () => {
                 .then((verificationResponse) => {
                     // If we're good, reload the page and
                     // the server will redirect us to the dashboard
-                    console.log(verificationResponse);
-
                     if (verificationResponse.data?.verified) {
                         return window.location.reload();
                     }

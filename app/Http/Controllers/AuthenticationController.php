@@ -152,7 +152,7 @@ class AuthenticationController extends Controller
                 session(self::CREDENTIAL_REQUEST_OPTIONS_SESSION_KEY)
             ),
             $serverRequest,
-            $authenticatorAssertionResponse->getUserHandle(),
+            $authenticatorAssertionResponse->getUserHandle() ?? $request->get('username'),
         );
 
         // If we've gotten this far, the response is valid!

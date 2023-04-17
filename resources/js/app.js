@@ -56,12 +56,15 @@ document.addEventListener('alpine:init', () => {
                 // Prompt the user to authenticate with their passkey
                 .then((response) => startAuthentication(response.data))
                 // Verify the data with the server
-                .then((attResp) =>
-                    axios.post('/authentication/verify', attResp),
-                )
+                .then((attResp) => {
+                    attResp.username = this.username;
+                    return axios.post('/authentication/verify', attResp);
+                })
                 .then((verificationResponse) => {
                     // If we're good, reload the page and
                     // the server will redirect us to the dashboard
+                    console.log(verificationResponse);
+
                     if (verificationResponse.data?.verified) {
                         return window.location.reload();
                     }

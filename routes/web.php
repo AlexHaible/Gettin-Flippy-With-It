@@ -7,6 +7,10 @@ Route::get('/', function () {
     return view('index');
 })->name('index');
 
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('dashboard');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
 
@@ -15,4 +19,4 @@ Route::middleware('guest')->group(function () {
     Route::post('/auth/finish', [AuthController::class, 'finish'])->name('auth.finish');
 });
 
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
+Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');

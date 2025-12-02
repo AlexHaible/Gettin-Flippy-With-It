@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\LaravelPasskeys\Actions\GeneratePasskeyRegisterOptionsAction;
 use Spatie\LaravelPasskeys\Actions\GeneratePasskeyAuthenticationOptionsAction;
 use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
@@ -51,14 +54,20 @@ class AuthController extends Controller
             ]);
         }
 
-        // Note: This action automatically flashes 'passkey-authentication-options' to session
+        // If user exists, start login flow
         $options = app(GeneratePasskeyAuthenticationOptionsAction::class)->execute();
 
-        session(['auth_action' => 'login']);
+        // Explicitly persist the options we are sending to the browser,
+        // so the challenge used during verification matches exactly.
+        session([
+            'auth_action' => 'login',
+            'auth_user_id' => $user->id,
+            'passkey-authentication-options' => $options,
+        ]);
 
         return response()->json([
-            'flow' => 'login',
-            'options' => json_decode($options)
+            'flow'    => 'login',
+            'options' => json_decode($options),
         ]);
     }
 
@@ -71,6 +80,8 @@ class AuthController extends Controller
             'data' => 'required', // The WebAuthn JSON response from browser
         ]);
 
+        Log::error('Browser data when authenticating', $data);
+
         $action = session('auth_action');
         $responseJson = json_encode($data['data']); // Convert array back to string for the Action
 
@@ -82,34 +93,71 @@ class AuthController extends Controller
                 // Retrieve original options from session
                 $optionsJson = session('passkey-registration-options');
 
-                // Verify & Store
+                $passkeyName = $user->username . '-' . Str::uuid();
+
                 app(StorePasskeyAction::class)->execute(
-                    authenticatable: $user,
-                    passkeyJson: $responseJson,
-                    passkeyOptionsJson: $optionsJson,
-                    hostName: $request->getHost()
+                    $user,
+                    $responseJson,
+                    $optionsJson,
+                    $request->getHost(),
+                    ['name' => $passkeyName],
                 );
 
                 Auth::login($user, true);
 
             } else {
-                // Retrieve automatically flashed options
                 $optionsJson = session('passkey-authentication-options');
+
+                Log::error('Auth options', [
+                    'auth_action' => session('auth_action'),
+                    'auth_options' => $optionsJson,
+                ]);
+
+                if (! $optionsJson) {
+                    throw new \RuntimeException('Missing authentication options in session.');
+                }
 
                 // Verify & Find User
                 $passkey = app(FindPasskeyToAuthenticateAction::class)->execute(
-                    publicKeyCredentialJson: $responseJson,
-                    passkeyOptionsJson: $optionsJson
+                    $responseJson,
+                    $optionsJson,
                 );
 
-                if ($passkey && $passkey->user) {
-                    Auth::login($passkey->user, true);
-                } else {
-                    throw new \Exception("Passkey not found or invalid.");
+                Log::error('Passkey resolved by FindPasskeyToAuthenticateAction', [
+                    'passkey_id' => $passkey?->id,
+                    'user_id' => $passkey?->user?->id,
+                ]);
+
+                $authenticatableModel = config('passkeys.models.authenticatable', User::class);
+
+                $user = $passkey->user
+                    ?? ($authenticatableModel ? $authenticatableModel::find($passkey->authenticatable_id) : null);
+
+                $expectedUserId = session('auth_user_id');
+
+                Log::error('Resolved user from passkey', [
+                    'user_id' => $user?->id,
+                    'username' => $user?->username,
+                    'expected_user_id' => $expectedUserId,
+                ]);
+
+                if (! $user) {
+                    throw new \Exception('No user attached to this passkey.');
                 }
+
+                if ($expectedUserId && $user->id !== $expectedUserId) {
+                    throw new \Exception('Passkey does not belong to the provided username.');
+                }
+
+                Auth::login($user, true);
             }
 
-            session()->forget(['auth_action', 'auth_user_id', 'passkey-registration-options']);
+            session()->forget([
+                'auth_action',
+                'auth_user_id',
+                'passkey-registration-options',
+                'passkey-authentication-options',
+            ]);
 
             return response()->json(['redirect' => '/']);
 

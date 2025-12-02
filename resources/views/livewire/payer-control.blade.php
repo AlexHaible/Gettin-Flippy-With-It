@@ -1,4 +1,7 @@
-<div class="flex flex-col items-center justify-center min-h-[85vh] text-center relative py-12 px-6 overflow-hidden">
+<div
+    wire:poll.1s="fetchData"
+    class="flex flex-col items-center justify-center min-h-[85vh] text-center relative py-12 px-6 overflow-hidden"
+>
 
     {{-- 1. BOLD BACKGROUND: "Fan" Pattern (High Contrast) --}}
     <div class="absolute inset-0 deco-pattern-fan opacity-30 pointer-events-none"></div>
@@ -24,10 +27,9 @@
             --}}
             <button
                 wire:click="flip"
-                wire:confirm="Confirm payment? This will switch the turn to YOU."
                 wire:key="payer-btn"
                 wire:transition.opacity.duration.500ms
-                class="group relative min-w-[340px] p-2 text-center uppercase tracking-[0.4em] shadow-[inset_0_0_0_1px_var(--color-gold-500)]"
+                class="group relative min-w-[340px] bg-noir-900 p-2 text-center uppercase tracking-[0.4em] shadow-[inset_0_0_0_1px_var(--color-gold-500)]"
             >
                 {{-- Button Label --}}
                 <span class="block bg-transparent px-8 py-6 text-2xl font-display font-bold text-gold-500 transition-colors duration-500 group-hover:bg-gold-500/90 group-hover:text-black">
@@ -49,8 +51,8 @@
                 </div>
 
                 {{-- Sub-text / Instruction --}}
-                <div class="absolute -bottom-12 left-0 right-0 text-[10px] text-gold-600 tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    CLICK TO ROTATE
+                <div class="absolute -bottom-12 left-0 right-0 text-lg text-gold-600 tracking-widest opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                    CLICK TO FLIP
                 </div>
             </button>
 
@@ -71,6 +73,5 @@
                 @endauth
             </div>
         @endif
-
     </div>
 </div>

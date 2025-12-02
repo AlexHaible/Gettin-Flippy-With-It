@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('username')->unique();
             $table->boolean('is_current_payer')->default(false);
+            $table->rememberToken();
             $table->timestamps();
         });
 

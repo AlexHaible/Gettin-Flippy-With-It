@@ -5,13 +5,14 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
-use Laragear\WebAuthn\WebAuthnAuthentication;
+use Override;
+use Spatie\LaravelPasskeys\Models\Concerns\HasPasskeys;
+use Spatie\LaravelPasskeys\Models\Concerns\InteractsWithPasskeys;
 
-class User extends Authenticatable implements WebAuthnAuthenticatable
+class User extends Authenticatable implements HasPasskeys
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, WebAuthnAuthentication;
+    use HasFactory, Notifiable, InteractsWithPasskeys;
 
     /**
      * The attributes that are mass assignable.
@@ -19,7 +20,19 @@ class User extends Authenticatable implements WebAuthnAuthenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'username',
+        'is_current_payer',
     ];
+
+    #[Override]
+    public function getPasskeyName(): string
+    {
+        return $this->username;
+    }
+
+    #[Override]
+    public function getPasskeyDisplayName(): string
+    {
+        return $this->username;
+    }
 }

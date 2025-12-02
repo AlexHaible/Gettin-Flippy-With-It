@@ -1,14 +1,18 @@
 <?php
 
-use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
 
 Route::get('/', function () {
     return view('index');
+})->name('index');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+
+    // API Endpoints
+    Route::post('/auth/start', [AuthController::class, 'start'])->name('auth.start');
+    Route::post('/auth/finish', [AuthController::class, 'finish'])->name('auth.finish');
 });
 
-WebAuthnRoutes::register(
-    attest: 'auth/register',
-    assert: 'auth/login'
-)->withoutMiddleware(VerifyCsrfToken::class);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');

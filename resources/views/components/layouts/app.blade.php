@@ -29,7 +29,7 @@
     <header class="w-full h-[80px] fixed top-0 left-0 flex items-center justify-center bg-noir-900/75 backdrop-blur-md shadow-md z-20">
         <nav class="absolute left-4">
         @auth
-            <a href="{{ route('dashboard') }}" class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold">
+            <a href="{{ route('index') }}" class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold">
                 Dashboard
             </a>
         @elseauth

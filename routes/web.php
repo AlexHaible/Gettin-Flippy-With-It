@@ -1,34 +1,22 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\AuthenticationController;
 
 Route::get('/', function () {
-    return view('home');
+    return view('index');
+})->name('index');
+
+Route::get('/dashboard', function () {
+    return view('dashboard');
+})->name('dashboard');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+
+    // API Endpoints
+    Route::post('/auth/start', [AuthController::class, 'start'])->name('auth.start');
+    Route::post('/auth/finish', [AuthController::class, 'finish'])->name('auth.finish');
 });
 
-Route::get('/auth', function () {
-    if (Auth::check()) {
-        return redirect('/', 302);
-    }
-    return view('auth');
-});
-
-Route::get('logout', function () {
-    Auth::logout();
-
-    return redirect('/');
-});
-
-Route::prefix('registration')->controller(RegistrationController::class)->group(function () {
-    Route::post('/options', 'generateOptions');
-    Route::post('/verify', 'verify');
-});
-
-Route::prefix('authentication')->controller(AuthenticationController::class)->group(function () {
-    Route::post('/options', 'generateOptions');
-    Route::post('/verify', 'verify');
-});
+Route::get('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');

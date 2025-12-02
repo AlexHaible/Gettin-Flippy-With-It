@@ -1,34 +1,14 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\RegistrationController;
-use App\Http\Controllers\AuthenticationController;
+use Laragear\WebAuthn\Http\Routes as WebAuthnRoutes;
 
 Route::get('/', function () {
-    return view('home');
+    return view('index');
 });
 
-Route::get('/auth', function () {
-    if (Auth::check()) {
-        return redirect('/', 302);
-    }
-    return view('auth');
-});
-
-Route::get('logout', function () {
-    Auth::logout();
-
-    return redirect('/');
-});
-
-Route::prefix('registration')->controller(RegistrationController::class)->group(function () {
-    Route::post('/options', 'generateOptions');
-    Route::post('/verify', 'verify');
-});
-
-Route::prefix('authentication')->controller(AuthenticationController::class)->group(function () {
-    Route::post('/options', 'generateOptions');
-    Route::post('/verify', 'verify');
-});
+WebAuthnRoutes::register(
+    attest: 'auth/register',
+    assert: 'auth/login'
+)->withoutMiddleware(VerifyCsrfToken::class);

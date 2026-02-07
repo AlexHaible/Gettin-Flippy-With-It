@@ -34,10 +34,6 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // 6. Average Cost (My Share)
-        $myTotalShare = $totalSpent / 2;
-        $myAverageCost = $totalShowings > 0 ? $myTotalShare / $totalShowings : 0;
-
         // 7. Payer Breakdown (Manual 50/50 Split)
         $splitAmount = $totalSpent / 2;
         $splitTickets = $totalShowings / 2;
@@ -76,10 +72,8 @@ class DashboardController extends Controller
             'totalShowings' => $totalShowings,
             'totalMovies' => $totalMovies,
             'totalSpent' => $totalSpent,
-            'myTotalShare' => $myTotalShare,
             'cinemaDistribution' => $cinemaDistribution,
             'recentShowings' => $recentShowings,
-            'averageCost' => $myAverageCost,
             'payerStats' => $payerStats,
             'dayOfWeekStats' => $dayOfWeekStats,
         ]);

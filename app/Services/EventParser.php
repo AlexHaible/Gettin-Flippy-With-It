@@ -94,7 +94,7 @@ class EventParser
         // 4. Call Gemini API
         $response = retry(3, function () use ($prompt, $tool) {
             return $this->client
-                ->generativeModel('models/gemini-2.5-flash')
+                ->generativeModel('models/gemini-3-flash-preview')
                 ->withTool($tool)
                 ->generateContent($prompt);
         }, 1000);

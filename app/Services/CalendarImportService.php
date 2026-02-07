@@ -49,12 +49,24 @@ class CalendarImportService
             if (!$isInvited) {
                 continue;
             }
-            echo "Processing: " . ($event->summary ?? 'Unknown') . "\n";
 
             // IDEMPOTENCY CHECK:
-            // Skip processing if we have already imported this specific Google Event ID.
-            if (Showing::where('google_event_id', $event->id)->exists()) {
-                continue;
+            // Check if we have already imported this specific Google Event ID.
+            $existingShowing = Showing::with(['movie', 'cinema'])->where('google_event_id', $event->id)->first();
+
+            if ($existingShowing) {
+                // If it exists and has valid data, skip it.
+                // If it is "Unknown", we want to re-process it to try and fix it.
+                $isUnknown = ($existingShowing->movie && $existingShowing->movie->title === 'Unknown Movie') ||
+                    ($existingShowing->cinema && $existingShowing->cinema->name === 'Unknown Cinema');
+
+                if (!$isUnknown) {
+                    continue;
+                }
+                echo "Re-processing 'Unknown' event: " . ($event->summary ?? 'Unknown') . "\n";
+            }
+            else {
+                echo "Processing: " . ($event->summary ?? 'Unknown') . "\n";
             }
 
             $title = $event->summary ?? 'Unknown Title';
@@ -87,11 +99,12 @@ class CalendarImportService
             $movie = Movie::firstOrCreate(['title' => $parsedData['movie'] ?? 'Unknown Movie']);
             $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
 
-            Showing::create([
+            Showing::updateOrCreate(
+            ['google_event_id' => $event->id],
+            [
                 'user_id' => $ticketPayerId, // Main booker
                 'movie_id' => $movie->id,
                 'cinema_id' => $cinema->id,
-                'google_event_id' => $event->id,
                 'start_time' => $event->startDateTime ?? $event->startDate,
                 'price_total' => $parsedData['price'] ?? 0,
                 'hall_name' => $parsedData['hall'] ?? null,
@@ -99,7 +112,8 @@ class CalendarImportService
                 'seat_numbers' => $parsedData['seats'] ?? null,
                 'popcorn_payer_id' => $snackPayerId,
                 'soda_payer_id' => $snackPayerId,
-            ]);
+            ]
+            );
         }
     }
 

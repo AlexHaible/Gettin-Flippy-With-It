@@ -13,7 +13,7 @@ return [
             /*
              * Path to the json file containing the credentials.
              */
-            'credentials_json' => base64_decode(env('GOOGLE_CALENDAR_CREDENTIALS_B64')),
+            'credentials_json' => json_decode(base64_decode(env('GOOGLE_CALENDAR_CREDENTIALS_B64')), true),
         ],
 
         /*
@@ -37,7 +37,7 @@ return [
      */
     'calendar_id' => env('GOOGLE_CALENDAR_ID'),
 
-     /*
+    /*
      *  The email address of the user account to impersonate.
      */
     'user_to_impersonate' => env('GOOGLE_CALENDAR_IMPERSONATE'),

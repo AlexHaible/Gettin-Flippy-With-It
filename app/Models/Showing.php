@@ -9,13 +9,30 @@ class Showing extends Model
 {
     protected $guarded = [];
 
-    public function user(): BelongsTo {
+    protected $casts = [
+        'start_time' => 'datetime',
+    ];
+
+    public function user(): BelongsTo
+    {
         return $this->belongsTo(User::class);
     }
-    public function movie(): BelongsTo {
+    public function movie(): BelongsTo
+    {
         return $this->belongsTo(Movie::class);
     }
-    public function cinema(): BelongsTo {
+    public function cinema(): BelongsTo
+    {
         return $this->belongsTo(Cinema::class);
+    }
+
+    public function popcornPayer(): BelongsTo
+    {
+        return $this->belongsTo(User::class , 'popcorn_payer_id');
+    }
+
+    public function sodaPayer(): BelongsTo
+    {
+        return $this->belongsTo(User::class , 'soda_payer_id');
     }
 }

@@ -1,86 +1,96 @@
 <?php
 
-namespace app\Services;
+namespace App\Services;
 
 use App\Models\Cinema;
 use App\Models\Movie;
 use App\Models\Showing;
 use App\Models\User;
 use Spatie\GoogleCalendar\Event;
+use Carbon\Carbon;
 
-class CalendarImportService {
-    public function import(): void {
-        // Fetch events. Because we use a Service Account, this only fetches
-        // events where the Service Account email was explicitly invited.
-        $events = Event::get();
+class CalendarImportService
+{
+    public function import(): void
+    {
+        // Get the Service Account Email to filter for invites
+        $serviceAccountEmail = config('google-calendar.auth_profiles.service_account.credentials_json.client_email');
+
+        // Fetch events from the configured User Calendar ID
+        $calendarId = config('google-calendar.calendar_id');
+
+        // Use the 'q' parameter to filter by the Service Account Email on the server side.
+        // This significantly reduces data transfer by only getting events matching the email.
+        $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
 
         foreach ($events as $event) {
+            // FILTER: duplicate check for processing loop
+            $attendees = $event->attendees ?? [];
+            $isInvited = collect($attendees)->contains(function ($attendee) use ($serviceAccountEmail) {
+                return $attendee->email === $serviceAccountEmail;
+            });
+
+            if (!$isInvited) {
+                continue;
+            }
+            echo "Processing: " . ($event->summary ?? 'Unknown') . "\n";
+
             // IDEMPOTENCY CHECK:
             // Skip processing if we have already imported this specific Google Event ID.
             if (Showing::where('google_event_id', $event->id)->exists()) {
                 continue;
             }
 
-            $description = $event->description;
+            $title = $event->summary ?? 'Unknown Title';
+            $location = $event->location ?? 'Unknown Location';
+            $description = $event->description ?? '';
 
-            // 1. PARSE PRICE
-            // Looks for "Din pris: 300" or "Din pris: 300,00"
-            preg_match('/Din pris:\s*(\d+)([.,]\d+)?/', $description, $priceMatches);
-            // Convert to integer (e.g. 300 becomes 300).
-            // NOTE: If you want cents, multiply by 100 here. Assuming input is whole Kr.
-            $price = isset($priceMatches[1]) ? (int) $priceMatches[1] : 0;
+            // Use LLM to parse the description
+            $parser = new EventParser();
+            $parsedData = $parser->parse($title, $location, $description);
 
-            // 2. PARSE REFERENCE CODE
-            // Captures alphanumeric strings after "bookingreference er:"
-            preg_match('/bookingreference er:\s*([A-Za-z0-9]+)/', $description, $refMatches);
-            $ref = $refMatches[1] ?? null;
-
-            // 3. PARSE MOVIE, CINEMA, AND HALL
-            // This complex regex breaks down the line: "- {Title} Biograf: {Cinema}, {Hall}"
-            // /mi flags make it multiline and case-insensitive.
-            preg_match('/-\s+(.*?)\s+Biograf:\s+(.*?)[,\n\r]+\s*(Sal\s+\d+|IMAX|.*)/mi', $description, $infoMatches);
-            $movieTitle = trim($infoMatches[1] ?? 'Unknown Movie');
-            $cinemaName = trim($infoMatches[2] ?? 'Unknown Cinema');
-            $hallName = trim($infoMatches[3] ?? 'Unknown Hall');
-
-            // 4. PARSE SEATS FOR HEATMAP
-            // Regex captures "C1, C2" or "C1,C2" or "Row 1, Row 2" (alphanumeric + comma + space)
-            preg_match('/Dine sæder:\s*([A-Za-z0-9,\s]+)/', $description, $seatMatches);
-            $rawSeats = $seatMatches[1] ?? null;
-
-            // DATA NORMALIZATION:
-            // We want the database to strictly store "C1,C2" (no spaces) to make downstream parsing easier.
-            if ($rawSeats) {
-                // Explode by comma to get individual entries
-                $seatArray = explode(',', $rawSeats);
-                // Trim whitespace from each seat (" C1 " -> "C1")
-                $seatArray = array_map('trim', $seatArray);
-                // Re-implode with just commas
-                $normalizedSeats = implode(',', $seatArray);
-            } else {
-                $normalizedSeats = null;
-            }
+            // Map names to User IDs (Alex = 1, Friend = 2)
+            $ticketPayerId = $this->resolveUser($parsedData['ticket_payer'] ?? null);
+            // Use snack_payer for both popcorn and soda
+            $snackPayerId = $this->resolveUser($parsedData['snack_payer'] ?? null);
 
             // 5. DATA PERSISTENCE
             // Use firstOrCreate to avoid duplicating Movies and Cinemas.
-            $movie = Movie::firstOrCreate(['title' => $movieTitle]);
-            $cinema = Cinema::firstOrCreate(['name' => $cinemaName]);
-
-            // Determine the booker based on the event creator.
-            // Fallback to the first user in DB if creator email doesn't match our system.
-            $booker = User::where('email', $event->creator->email)->first() ?? User::first();
+            $movie = Movie::firstOrCreate(['title' => $parsedData['movie'] ?? 'Unknown Movie']);
+            $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
 
             Showing::create([
-                'user_id'           => $booker->id,
-                'movie_id'          => $movie->id,
-                'cinema_id'         => $cinema->id,
-                'google_event_id'   => $event->id,
-                'start_time'        => $event->startDateTime,
-                'price_total'       => $price,
-                'hall_name'         => $hallName,
-                'booking_reference' => $ref,
-                'seat_numbers'      => $normalizedSeats,
+                'user_id' => $ticketPayerId, // Main booker
+                'movie_id' => $movie->id,
+                'cinema_id' => $cinema->id,
+                'google_event_id' => $event->id,
+                'start_time' => $event->startDateTime ?? $event->startDate,
+                'price_total' => $parsedData['price'] ?? 0,
+                'hall_name' => $parsedData['hall'] ?? null,
+                'booking_reference' => $parsedData['booking_reference'] ?? null,
+                'seat_numbers' => $parsedData['seats'] ?? null,
+                'popcorn_payer_id' => $snackPayerId,
+                'soda_payer_id' => $snackPayerId,
             ]);
         }
+    }
+
+    private function resolveUser(?string $name): int
+    {
+        // 1. If name is explicit, map it
+        if ($name) {
+            if (stripos($name, 'Alex') !== false) {
+                return 1;
+            }
+            if (stripos($name, 'Casper') !== false || stripos($name, 'Friend') !== false) {
+                return 2;
+            }
+        }
+
+        // 2. Fallback: Use the user marked as 'is_current_payer'
+        $payer = User::where('is_current_payer', true)->first();
+
+        // 3. Absolute fallback to ID 1 (Alex) if DB state is weird
+        return $payer ? $payer->id : 1;
     }
 }

@@ -21,7 +21,7 @@
                 <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Total Spend</h3>
                 <p class="text-3xl font-bold font-display text-gold-400">{{ number_format($totalSpent, 0, ',', '.') }}
                     kr.</p>
-                <p class="text-gold-700 text-xs mt-1">Tickets & Snacks</p>
+                <p class="text-gold-700 text-xs mt-1">Tickets</p>
             </div>
 
             <!-- Average Cost -->
@@ -60,7 +60,6 @@
                             </div>
                             <div>
                                 <p class="text-gold-100 font-medium">{{ $payer->user->username ?? 'Unknown' }}</p>
-                                <p class="text-xs text-gold-700">{{ $payer->tickets_bought }} showings paid</p>
                             </div>
                         </div>
                         <div class="text-right">

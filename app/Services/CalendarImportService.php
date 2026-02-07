@@ -16,12 +16,28 @@ class CalendarImportService
         // Get the Service Account Email to filter for invites
         $serviceAccountEmail = config('google-calendar.auth_profiles.service_account.credentials_json.client_email');
 
+        if (empty($serviceAccountEmail)) {
+            echo "Error: Service Account Email not found. Check GOOGLE_CALENDAR_CREDENTIALS_B64 in .env.\n";
+            return;
+        }
+
         // Fetch events from the configured User Calendar ID
         $calendarId = config('google-calendar.calendar_id');
 
+        if (empty($calendarId)) {
+            echo "Error: Calendar ID not found. Check GOOGLE_CALENDAR_ID in .env.\n";
+            return;
+        }
+
         // Use the 'q' parameter to filter by the Service Account Email on the server side.
         // This significantly reduces data transfer by only getting events matching the email.
-        $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
+        try {
+            $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
+        }
+        catch (\Exception $e) {
+            echo "Error fetching events: " . $e->getMessage() . "\n";
+            return;
+        }
 
         foreach ($events as $event) {
             // FILTER: duplicate check for processing loop
@@ -47,7 +63,19 @@ class CalendarImportService
 
             // Use LLM to parse the description
             $parser = new EventParser();
-            $parsedData = $parser->parse($title, $location, $description);
+            try {
+                $parsedData = $parser->parse($title, $location, $description);
+            }
+            catch (\Exception $e) {
+                echo "Error parsing description for event '{$title}': " . $e->getMessage() . "\n";
+                // Fallback to empty array to allow partial import or skip?
+                // For now, let's treat it as empty data and rely on defaults/nulls
+                $parsedData = [];
+            }
+
+            if (!is_array($parsedData)) {
+                $parsedData = [];
+            }
 
             // Map names to User IDs (Alex = 1, Friend = 2)
             $ticketPayerId = $this->resolveUser($parsedData['ticket_payer'] ?? null);

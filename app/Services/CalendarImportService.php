@@ -62,7 +62,7 @@ class CalendarImportService
             $description = $event->description ?? '';
 
             // Use LLM to parse the description
-            $parser = new EventParser();
+            $parser = app(EventParser::class);
             try {
                 $parsedData = $parser->parse($title, $location, $description);
             }

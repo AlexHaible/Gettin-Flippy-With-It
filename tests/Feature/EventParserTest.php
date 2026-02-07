@@ -16,16 +16,21 @@ class EventParserTest extends TestCase
                 [
                     'content' => [
                         'parts' => [
-                            ['text' => json_encode([
-                                    "movie" => "Inception",
-                                    "cinema" => "Imperial",
-                                    "hall" => "Bio 1",
-                                    "price" => 150,
-                                    "ticket_payer" => null,
-                                    "snack_payer" => null,
-                                    "booking_reference" => "REF123",
-                                    "seats" => "A1, A2"
-                                ])]
+                            [
+                                'functionCall' => [
+                                    'name' => 'extract_showing_data',
+                                    'args' => [
+                                        "movie" => "Inception",
+                                        "cinema" => "Imperial",
+                                        "hall" => "Bio 1",
+                                        "price" => 150,
+                                        "ticket_payer" => null,
+                                        "snack_payer" => null,
+                                        "booking_reference" => "REF123",
+                                        "seats" => "A1, A2"
+                                    ]
+                                ]
+                            ]
                         ],
                         'role' => 'model'
                     ],

@@ -2,6 +2,10 @@
 
 namespace App\Services;
 
+use Gemini\Data\Tool;
+use Gemini\Data\FunctionDeclaration;
+use Gemini\Data\Schema;
+use Gemini\Enums\DataType;
 use Gemini\Contracts\ClientContract;
 
 class EventParser
@@ -12,71 +16,95 @@ class EventParser
 
     public function parse(string $title, string $location, string $description): array
     {
-        // 1. Construct the prompt
-        $prompt = "You are a helpful assistant that parses Google Calendar event descriptions for a movie night.\n" .
-            "The content may be in English or Danish. Please extract the following information:\n" .
-            "- Movie Title (Use the event title '$title' as a strong hint, but check description for full name)\n" .
-            "- Cinema Name (Check location '$location' and description)\n" .
-            "- Hall/Screen Name (Check title '$title' for 'Sal' or 'Screen', and description)\n" .
-            "- Total Price (as integer)\n" .
-            "- Who paid for the tickets (Name)\n" .
-            "- Who paid for snacks (Popcorn & Soda are always bundled)\n" .
-            "- Booking Reference\n" .
-            "- Seat Numbers (comma separated)\n\n" .
-            "Special Rules:\n" .
-            "- If the title contains 'IMAX', set Cinema to 'Vue Fisketorvet' and Hall to 'IMAX'.\n" .
-            "- If the location or description mentions 'CinemaxX', set Cinema to 'Vue Fisketorvet' (because it rebranded).\n" .
-            "- Extract 'Sal' number from title (e.g. 'Toy Story 4 - Sal 12' -> Hall: 'Sal 12').\n\n" .
-            "If a payer is not explicitly mentioned:\n" .
-            "- Return null for the payer fields.\n" .
-            "The user \"Alex\" corresponds to ID 1. The friend \"Casper\" (or any other name) corresponds to ID 2.\n\n" .
-            "Output JSON only.\n" .
-            "Structure:\n" .
-            "{\n" .
-            "    \"movie\": \"Title\",\n" .
-            "    \"cinema\": \"Cinema\",\n" .
-            "    \"hall\": \"Hall\",\n" .
-            "    \"price\": 300,\n" .
-            "    \"ticket_payer\": \"Name\",\n" .
-            "    \"snack_payer\": \"Name\",\n" .
-            "    \"booking_reference\": \"Ref\",\n" .
-            "    \"seats\": \"C1, C2\"\n" .
-            "}\n\n" .
-            "Event Details:\n" .
-            "Title: $title\n" .
-            "Location: $location\n" .
-            "Description:\n" .
-            $description;
-
-        // 2. Call Gemini API
+        // 1. Initialize Client
         if (!$this->client) {
-            $apiKey = config('llm.api_key') ?? env('GEMINI_API_KEY');
+            $apiKey = config('services.gemini.api_key');
             if (!$apiKey) {
-                throw new \Exception('Gemini API Key not specified in config or .env');
+                throw new \Exception('Gemini API Key not specified in config/services.php (.env GEMINI_API_KEY)');
             }
             $this->client = \Gemini::client($apiKey);
         }
 
-        $response = retry(3, function () use ($prompt) {
-            return $this->client->generativeModel('models/gemini-3-flash-preview')->generateContent($prompt);
+        // 2. Define the Function Tool
+        $schema = new Schema(
+            type: DataType::OBJECT,
+            properties: [
+                'movie' => new Schema(
+                    type: DataType::STRING,
+                    description: 'The full title of the movie.'
+                ),
+                'cinema' => new Schema(
+                    type: DataType::STRING,
+                    description: 'The name of the cinema (e.g. Vue Fisketorvet).'
+                ),
+                'hall' => new Schema(
+                    type: DataType::STRING,
+                    description: 'The hall or screen name (e.g. Sal 1, IMAX).'
+                ),
+                'price' => new Schema(
+                    type: DataType::INTEGER,
+                    description: 'The total price in DKK.'
+                ),
+                'ticket_payer' => new Schema(
+                    type: DataType::STRING,
+                    description: 'Name of the person who paid for tickets (Alex or Casper). Return null if unknown.',
+                    nullable: true
+                ),
+                'snack_payer' => new Schema(
+                    type: DataType::STRING,
+                    description: 'Name of the person who paid for snacks. Return null if unknown.',
+                    nullable: true
+                ),
+                'booking_reference' => new Schema(
+                    type: DataType::STRING,
+                    description: 'The booking reference number.',
+                    nullable: true
+                ),
+                'seats' => new Schema(
+                    type: DataType::STRING,
+                    description: 'Comma separated seat numbers (e.g. C1, C2).',
+                    nullable: true
+                ),
+            ],
+            required: ['movie', 'cinema', 'hall', 'price']
+        );
+
+        $functionDeclaration = new FunctionDeclaration(
+            name: 'extract_showing_data',
+            description: 'Extracts movie showing details from a calendar event.',
+            parameters: $schema
+        );
+
+        $tool = new Tool(
+            functionDeclarations: [$functionDeclaration]
+        );
+
+        // 3. Construct the Prompt
+        $prompt = "Analyze this calendar event and extract the movie showing details.\n" .
+            "Event Title: $title\n" .
+            "Location: $location\n" .
+            "Description: $description\n\n" .
+            "Special Rules:\n" .
+            "- If 'IMAX' is in the title, Cinema is 'Vue Fisketorvet' and Hall is 'IMAX'.\n" .
+            "- 'CinemaxX' is now 'Vue Fisketorvet'.\n" .
+            "- Extract 'Sal' number from title if present.\n" .
+            "- Alex = ID 1, Casper = ID 2 (map names in output if possible, otherwise just names).\n" .
+            "Use the extract_showing_data function.";
+
+        // 4. Call Gemini API
+        $response = retry(3, function () use ($prompt, $tool) {
+            return $this->client
+                ->generativeModel('models/gemini-1.5-flash')
+                ->withTool($tool)
+                ->generateContent($prompt);
         }, 1000);
 
-        // 3. Parse JSON from response
-        return $this->extractJson($response->text());
-    }
+        // 5. Extract Function Call Arguments
+        $parts = $response->parts();
+        $part = $parts[0] ?? null;
 
-    private function extractJson(string $text): array
-    {
-        if (preg_match('/```json\s*(\{.*?\})\s*```/s', $text, $matches)) {
-            return json_decode($matches[1], true) ?? [];
-        }
-
-        $start = strpos($text, '{');
-        $end = strrpos($text, '}');
-
-        if ($start !== false && $end !== false) {
-            $jsonStr = substr($text, $start, $end - $start + 1);
-            return json_decode($jsonStr, true) ?? [];
+        if ($part && $part->functionCall && $part->functionCall->name === 'extract_showing_data') {
+            return $part->functionCall->args;
         }
 
         return [];

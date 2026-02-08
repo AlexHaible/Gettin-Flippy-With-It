@@ -35,8 +35,11 @@ class CalendarImportService
 
         // Use the 'q' parameter to filter by the Service Account Email on the server side.
         // This significantly reduces data transfer by only getting events matching the email.
+        $this->log("Using Service Account: " . $serviceAccountEmail);
+        $this->log("Using Calendar ID: " . $calendarId);
+
         try {
-            Log::info("Fetching events from Google Calendar (Last 10 years)...");
+            $this->log("Fetching events from Google Calendar (Last 10 years)...");
             $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
         }
         catch (\Exception $e) {
@@ -44,7 +47,12 @@ class CalendarImportService
             throw new \Exception("Error fetching events: " . $e->getMessage());
         }
 
-        Log::info("Fetched " . count($events) . " events from Google Calendar.");
+        $count = count($events);
+        $this->log("Fetched " . $count . " events from Google Calendar.");
+
+        if ($count === 0) {
+            $this->log("WARNING: No events found! Please ensure '{$serviceAccountEmail}' is added as an attendee to your movie events.");
+        }
 
         foreach ($events as $event) {
             // FILTER: duplicate check for processing loop
@@ -67,6 +75,14 @@ class CalendarImportService
                 $isUnknown = ($existingShowing->movie && $existingShowing->movie->title === 'Unknown Movie') ||
                     ($existingShowing->cinema && $existingShowing->cinema->name === 'Unknown Cinema');
 
+                // BACKFILL: Check if we need to fetch metadata (Runtime) for existing valid movies
+                if ($existingShowing->movie && $existingShowing->movie->title !== 'Unknown Movie') {
+                    if (!$existingShowing->movie->runtime) {
+                        $this->log("Backfilling metadata for: " . $existingShowing->movie->title);
+                        $this->fetchMovieMetadata($existingShowing->movie);
+                    }
+                }
+
                 if (!$isUnknown) {
                     continue;
                 }
@@ -86,7 +102,7 @@ class CalendarImportService
                 $parsedData = $parser->parse($title, $location, $description);
             }
             catch (\Exception $e) {
-                echo "Error parsing description for event '{$title}': " . $e->getMessage() . "\n";
+                $this->log("Error parsing description for event '{$title}': " . $e->getMessage());
                 // Fallback to empty array to allow partial import or skip?
                 // For now, let's treat it as empty data and rely on defaults/nulls
                 $parsedData = [];
@@ -140,12 +156,12 @@ class CalendarImportService
                         'tmdb_id' => $details['id'],
                         'runtime' => $details['runtime'] ?? null,
                     ]);
-                    echo "Updated metadata for '{$movie->title}': " . ($details['runtime'] ?? '?') . " mins\n";
+                    $this->log("Updated metadata for '{$movie->title}': " . ($details['runtime'] ?? '?') . " mins");
                 }
             }
         }
         catch (\Exception $e) {
-            echo "Error fetching TMDB metadata for '{$movie->title}': " . $e->getMessage() . "\n";
+            $this->log("Error fetching TMDB metadata for '{$movie->title}': " . $e->getMessage());
         }
     }
 
@@ -166,5 +182,11 @@ class CalendarImportService
 
         // 3. Absolute fallback to ID 1 (Alex) if DB state is weird
         return $payer ? $payer->id : 1;
+    }
+
+    private function log(string $message): void
+    {
+        echo $message . "\n";
+        Log::info($message);
     }
 }

@@ -36,6 +36,7 @@ class CalendarImportService
         // Use the 'q' parameter to filter by the Service Account Email on the server side.
         // This significantly reduces data transfer by only getting events matching the email.
         try {
+            Log::info("Fetching events from Google Calendar (Last 10 years)...");
             $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
         }
         catch (\Exception $e) {

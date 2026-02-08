@@ -9,6 +9,8 @@ use App\Services\EventParser;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Tests\TestCase;
+use App\Services\TmdbService;
+use Illuminate\Support\Facades\Log;
 
 class CalendarImportServiceTest extends TestCase
 {
@@ -23,6 +25,10 @@ class CalendarImportServiceTest extends TestCase
         // 1. Mock Config
         config(['google-calendar.auth_profiles.service_account.credentials_json.client_email' => 'service@example.com']);
         config(['google-calendar.calendar_id' => 'primary']);
+
+        // Mock Log
+        Log::shouldReceive('info')->andReturnNull();
+        Log::shouldReceive('error')->andReturnNull();
 
         // 2. Mock EventParser
         $mockParser = Mockery::mock(EventParser::class);
@@ -64,7 +70,10 @@ class CalendarImportServiceTest extends TestCase
         User::factory()->create(['username' => 'Casper', 'id' => 2]); // ID 2
 
         // 5. Run Import
-        $service = new CalendarImportService();
+        $tmdbMock = Mockery::mock(TmdbService::class);
+        $tmdbMock->shouldReceive('searchMovie')->andReturn([]);
+
+        $service = new CalendarImportService($tmdbMock);
         $service->import();
 
         // 6. Assert Database persistence

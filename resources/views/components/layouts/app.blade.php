@@ -47,7 +47,7 @@
             @endauth
             </nav>
     </header>
-    <main class="w-full mx-auto">
+    <main class="w-full mx-auto pt-[40px]">
         {{ $slot }}
     </main>
 </body>

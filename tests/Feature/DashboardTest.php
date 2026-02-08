@@ -18,7 +18,8 @@ class DashboardTest extends TestCase
         // Arrange
         $user = User::factory()->create();
         $cinema = Cinema::create(['name' => 'Vue Test']);
-        $movie = Movie::create(['title' => 'Test Movie']);
+        // Ensure runtime is set
+        $movie = Movie::create(['title' => 'Test Movie', 'runtime' => 120]); // 2 hours
 
         Showing::create([
             'user_id' => $user->id,
@@ -38,9 +39,20 @@ class DashboardTest extends TestCase
         $response->assertSee('Total Movies');
         $response->assertSee('1'); // Total count
         $response->assertSee('150 kr.'); // Total spend formatted
-        $response->assertSee('Avg. Cost / Movie'); // New stat
-        $response->assertSee('Payer Breakdown'); // New section
-        $response->assertSee('Weekly Habits'); // New section
+        
+        $response->assertSee('Total Time');
+        $response->assertSee('2,0'); // Value
+        $response->assertSee('hrs'); // Unit
+        
+        $response->assertSee('Avg. Cost / Movie');
+        $response->assertSee('150 kr.'); // 150 / 1
+        
+        $response->assertSee('Cost / Hour');
+        $response->assertSee('75'); // Value
+        $response->assertSee('kr.'); // Unit (might fail if space is weird)
+        
+        $response->assertSee('Payer Breakdown');
+        $response->assertSee('Weekly Habits');
         $response->assertSee('Vue Test'); // Cinema name
         $response->assertSee('Test Movie'); // Movie title
     }

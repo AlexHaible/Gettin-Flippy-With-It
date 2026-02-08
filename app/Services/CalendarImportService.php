@@ -11,6 +11,8 @@ use Carbon\Carbon;
 
 class CalendarImportService
 {
+    public function __construct(protected TmdbService $tmdbService) {}
+
     public function import(): void
     {
         // Get the Service Account Email to filter for invites
@@ -33,8 +35,7 @@ class CalendarImportService
         // This significantly reduces data transfer by only getting events matching the email.
         try {
             $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
-        }
-        catch (\Exception $e) {
+        } catch (\Exception $e) {
             echo "Error fetching events: " . $e->getMessage() . "\n";
             return;
         }
@@ -64,8 +65,7 @@ class CalendarImportService
                     continue;
                 }
                 echo "Re-processing 'Unknown' event: " . ($event->summary ?? 'Unknown') . "\n";
-            }
-            else {
+            } else {
                 echo "Processing: " . ($event->summary ?? 'Unknown') . "\n";
             }
 
@@ -77,8 +77,7 @@ class CalendarImportService
             $parser = app(EventParser::class);
             try {
                 $parsedData = $parser->parse($title, $location, $description);
-            }
-            catch (\Exception $e) {
+            } catch (\Exception $e) {
                 echo "Error parsing description for event '{$title}': " . $e->getMessage() . "\n";
                 // Fallback to empty array to allow partial import or skip?
                 // For now, let's treat it as empty data and rely on defaults/nulls
@@ -99,21 +98,45 @@ class CalendarImportService
             $movie = Movie::firstOrCreate(['title' => $parsedData['movie'] ?? 'Unknown Movie']);
             $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
 
+            // Fetch metadata if missing
+            if (!$movie->runtime && $movie->title !== 'Unknown Movie') {
+                $this->fetchMovieMetadata($movie);
+            }
+
             Showing::updateOrCreate(
-            ['google_event_id' => $event->id],
-            [
-                'user_id' => $ticketPayerId, // Main booker
-                'movie_id' => $movie->id,
-                'cinema_id' => $cinema->id,
-                'start_time' => $event->startDateTime ?? $event->startDate,
-                'price_total' => $parsedData['price'] ?? 0,
-                'hall_name' => $parsedData['hall'] ?? null,
-                'booking_reference' => $parsedData['booking_reference'] ?? null,
-                'seat_numbers' => $parsedData['seats'] ?? null,
-                'popcorn_payer_id' => $snackPayerId,
-                'soda_payer_id' => $snackPayerId,
-            ]
+                ['google_event_id' => $event->id],
+                [
+                    'user_id' => $ticketPayerId, // Main booker
+                    'movie_id' => $movie->id,
+                    'cinema_id' => $cinema->id,
+                    'start_time' => $event->startDateTime ?? $event->startDate,
+                    'price_total' => $parsedData['price'] ?? 0,
+                    'hall_name' => $parsedData['hall'] ?? null,
+                    'booking_reference' => $parsedData['booking_reference'] ?? null,
+                    'seat_numbers' => $parsedData['seats'] ?? null,
+                    'popcorn_payer_id' => $snackPayerId,
+                    'soda_payer_id' => $snackPayerId,
+                ]
             );
+        }
+    }
+
+    private function fetchMovieMetadata(Movie $movie): void
+    {
+        try {
+            $searchResult = $this->tmdbService->searchMovie($movie->title);
+            if ($searchResult && isset($searchResult['id'])) {
+                $details = $this->tmdbService->getMovieDetails($searchResult['id']);
+                if ($details) {
+                    $movie->update([
+                        'tmdb_id' => $details['id'],
+                        'runtime' => $details['runtime'] ?? null,
+                    ]);
+                    echo "Updated metadata for '{$movie->title}': " . ($details['runtime'] ?? '?') . " mins\n";
+                }
+            }
+        } catch (\Exception $e) {
+            echo "Error fetching TMDB metadata for '{$movie->title}': " . $e->getMessage() . "\n";
         }
     }
 

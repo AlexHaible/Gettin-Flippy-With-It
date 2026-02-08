@@ -8,7 +8,7 @@
         </div>
 
         <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <!-- Total Movies -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
                 <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Total Movies</h3>
@@ -21,15 +21,31 @@
                 <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Total Spend</h3>
                 <p class="text-3xl font-bold font-display text-gold-400">{{ number_format($totalSpent, 0, ',', '.') }}
                     kr.</p>
-                <p class="text-gold-700 text-xs mt-1">Tickets</p>
+                <p class="text-gold-700 text-xs mt-1">Tickets & Snacks</p>
             </div>
 
-            <!-- Average Cost -->
+            <!-- Total Time -->
+            <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
+                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Total Time</h3>
+                <p class="text-3xl font-bold font-display text-gold-400">{{ number_format($totalHours, 1, ',', '.') }}
+                    hrs</p>
+                <p class="text-gold-700 text-xs mt-1">In Theater</p>
+            </div>
+
+            <!-- Avg Cost / Movie -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
                 <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Avg. Cost / Movie</h3>
                 <p class="text-3xl font-bold font-display text-gold-400">{{ number_format($averageCost, 0, ',', '.') }}
                     kr.</p>
                 <p class="text-gold-700 text-xs mt-1">Per showing</p>
+            </div>
+
+            <!-- Cost / Hour -->
+            <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
+                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Cost / Hour</h3>
+                <p class="text-3xl font-bold font-display text-gold-400">{{ number_format($costPerHour, 0, ',', '.') }}
+                    kr.</p>
+                <p class="text-gold-700 text-xs mt-1">Price of entertainment</p>
             </div>
 
             <!-- Top Cinema -->

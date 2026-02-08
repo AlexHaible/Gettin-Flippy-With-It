@@ -34,11 +34,17 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // 6. Average Cost (My Share)
-        $myTotalShare = $totalSpent / 2;
-        $myAverageCost = $totalShowings > 0 ? $myTotalShare / $totalShowings : 0;
+        // 6. Total Runtime & Cost per Hour
+        $totalRuntimeMinutes = Showing::join('movies', 'showings.movie_id', '=', 'movies.id')
+            ->sum('movies.runtime');
 
-        // 7. Payer Breakdown (Manual 50/50 Split)
+        $totalHours = $totalRuntimeMinutes > 0 ? $totalRuntimeMinutes / 60 : 0;
+        $costPerHour = $totalHours > 0 ? $totalSpent / $totalHours : 0;
+
+        // 7. Average Cost
+        $averageCost = $totalShowings > 0 ? $totalSpent / $totalShowings : 0;
+
+        // 8. Payer Breakdown (Manual 50/50 Split)
         $splitAmount = $totalSpent / 2;
         $splitTickets = $totalShowings / 2;
 
@@ -63,23 +69,24 @@ class DashboardController extends Controller
             ],
         ]);
 
-        // 8. Day of Week Distribution (PHP - DB Agnostic)
+        // 9. Day of Week Distribution
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         $defaultStats = array_fill_keys($days, 0);
 
         $dayOfWeekStats = Showing::all()
             ->groupBy(fn($showing) => $showing->start_time->format('l'))
             ->map(fn($group) => $group->count())
-            ->union($defaultStats); // Ensure all days are present with 0 if missing
+            ->union($defaultStats);
 
         return view('dashboard', [
             'totalShowings' => $totalShowings,
             'totalMovies' => $totalMovies,
             'totalSpent' => $totalSpent,
-            'myTotalShare' => $myTotalShare,
+            'totalHours' => $totalHours,
+            'costPerHour' => $costPerHour,
+            'averageCost' => $averageCost,
             'cinemaDistribution' => $cinemaDistribution,
             'recentShowings' => $recentShowings,
-            'averageCost' => $myAverageCost,
             'payerStats' => $payerStats,
             'dayOfWeekStats' => $dayOfWeekStats,
         ]);

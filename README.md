@@ -1,59 +1,89 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Popcorn Protocol 🍿
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A highly purpose-built application designed to manage the cinema-going habits of exactly two people (Alex & Casper). It tracks who paid for tickets, who is due to pay for snacks, and provides deep insights into movie habits.
 
-## About Laravel
+## 🤝 The Protocol (How it Works)
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+This application is not a generic tracker. It enforces a strict fairness protocol:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+1.  **Ticket Payer**: Determined by the Google Calendar event details (parsed by AI).
+2.  **Snack Payer**: determined by the "Turn" system.
+    -   The front page displays **"Current Payer: [Name]"**.
+    -   When IT IS your turn, you pay for the snacks/drinks at the cinema.
+    -   **The Flip**: After paying, you click the component on the dashboard.
+    -   **Logic**: The app assigns the cost of the *current/closest* movie's snacks to YOU, and then flips the "Current Payer" status to the *other* person.
+    -   Result: The system knows you paid for this one, and the other person is now on the hook for next time.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🌟 Features
 
-## Learning Laravel
+-   **Two-Player Mode**: Hardcoded logic for two specific users to ensure perfect balance.
+-   **Passkey Authentication**: No passwords. Login uses biometric/device passkeys for instant, secure access.
+-   **Google Calendar Sync**: Automatically imports events, using AI to extract metadata (Cinema, Seat, Price).
+-   **Smart Backfill**: Automatically fetches runtime and metadata from TMDB for every movie.
+-   **LiveStats Dashboard**:
+    -   **Fairness Meter**: Who has spent more?
+    -   **Cost per Hour**: Are we getting value for money?
+    -   **Weekly Habits**: When do we go to the movies?
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 🚀 Setup
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Prerequisites
 
-## Laravel Sponsors
+-   PHP 8.2+
+-   Composer & Node.js
+-   **Hardware**: A device with Biometric support (TouchID/FaceID) for Passkeys.
+-   Google Cloud Service Account (Calendar API)
+-   Gemini API Key
+-   TMDB API Key
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### Installation
 
-### Premium Partners
+1.  **Clone & Install**:
+    ```bash
+    git clone <repo>
+    cd cinema
+    composer install
+    npm install && npm run build
+    ```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+2.  **Environment**:
+    Configure `.env` with your API keys.
 
-## Contributing
+    ```ini
+    GOOGLE_CALENDAR_ID=...
+    GOOGLE_CALENDAR_CREDENTIALS_B64=...
+    GEMINI_API_KEY=...
+    TMDB_API_KEY=...
+    ```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+3.  **Database**:
+    ```bash
+    php artisan migrate --seed
+    ```
+    *Note: The seeder creates the initial two users needed for the protocol.*
 
-## Code of Conduct
+## 📅 Usage
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### synchronizing Events
+```bash
+php artisan calendar:import
+```
+*Run this cron job hourly to keep stats up to date.*
 
-## Security Vulnerabilities
+### The "Flip" (Front Page)
+1.  Login via Passkey.
+2.  If your name is on the screen, **YOU PAY** for the snacks.
+3.  Click your name/card to **FLIP** the turn to the other person.
+4.  The system records your payment for the nearest movie.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## 🧪 Testing
 
-## License
+```bash
+php artisan test
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## 🛠️ Troubleshooting
+
+-   **Import finds 0 events**: Ensure the Service Account email is a guest on the event.
+-   **"Flip" didn't update a movie**: The flip logic looks for the *closest* movie (past or upcoming). If no movie is near, it just swaps turns without assigning cost.
+

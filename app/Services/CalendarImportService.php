@@ -6,15 +6,13 @@ use App\Models\Cinema;
 use App\Models\Movie;
 use App\Models\Showing;
 use App\Models\User;
-use Spatie\GoogleCalendar\Event;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Spatie\GoogleCalendar\Event;
 
 class CalendarImportService
 {
-    public function __construct(protected TmdbService $tmdbService)
-    {
-    }
+    public function __construct(protected TmdbService $tmdbService) {}
 
     public function import(): void
     {
@@ -23,32 +21,31 @@ class CalendarImportService
         $serviceAccountEmail = config('google-calendar.auth_profiles.service_account.credentials_json.client_email');
 
         if (empty($serviceAccountEmail)) {
-            throw new \Exception("Service Account Email not found. Check GOOGLE_CALENDAR_CREDENTIALS_B64 in .env.");
+            throw new \Exception('Service Account Email not found. Check GOOGLE_CALENDAR_CREDENTIALS_B64 in .env.');
         }
 
         // Fetch events from the configured User Calendar ID
         $calendarId = config('google-calendar.calendar_id');
 
         if (empty($calendarId)) {
-            throw new \Exception("Calendar ID not found. Check GOOGLE_CALENDAR_ID in .env.");
+            throw new \Exception('Calendar ID not found. Check GOOGLE_CALENDAR_ID in .env.');
         }
 
         // Use the 'q' parameter to filter by the Service Account Email on the server side.
         // This significantly reduces data transfer by only getting events matching the email.
-        $this->log("Using Service Account: " . $serviceAccountEmail);
-        $this->log("Using Calendar ID: " . $calendarId);
+        $this->log('Using Service Account: '.$serviceAccountEmail);
+        $this->log('Using Calendar ID: '.$calendarId);
 
         try {
-            $this->log("Fetching events from Google Calendar (Last 10 years)...");
+            $this->log('Fetching events from Google Calendar (Last 10 years)...');
             $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
-        }
-        catch (\Exception $e) {
-            Log::error("Error fetching events: " . $e->getMessage());
-            throw new \Exception("Error fetching events: " . $e->getMessage());
+        } catch (\Exception $e) {
+            Log::error('Error fetching events: '.$e->getMessage());
+            throw new \Exception('Error fetching events: '.$e->getMessage());
         }
 
         $count = count($events);
-        $this->log("Fetched " . $count . " events from Google Calendar.");
+        $this->log('Fetched '.$count.' events from Google Calendar.');
 
         if ($count === 0) {
             $this->log("WARNING: No events found! Please ensure '{$serviceAccountEmail}' is added as an attendee to your movie events.");
@@ -61,7 +58,7 @@ class CalendarImportService
                 return $attendee->email === $serviceAccountEmail;
             });
 
-            if (!$isInvited) {
+            if (! $isInvited) {
                 continue;
             }
 
@@ -77,19 +74,18 @@ class CalendarImportService
 
                 // BACKFILL: Check if we need to fetch metadata (Runtime) for existing valid movies
                 if ($existingShowing->movie && $existingShowing->movie->title !== 'Unknown Movie') {
-                    if (!$existingShowing->movie->runtime) {
-                        $this->log("Backfilling metadata for: " . $existingShowing->movie->title);
+                    if (! $existingShowing->movie->runtime) {
+                        $this->log('Backfilling metadata for: '.$existingShowing->movie->title);
                         $this->fetchMovieMetadata($existingShowing->movie);
                     }
                 }
 
-                if (!$isUnknown) {
+                if (! $isUnknown) {
                     continue;
                 }
-                echo "Re-processing 'Unknown' event: " . ($event->summary ?? 'Unknown') . "\n";
-            }
-            else {
-                echo "Processing: " . ($event->summary ?? 'Unknown') . "\n";
+                echo "Re-processing 'Unknown' event: ".($event->summary ?? 'Unknown')."\n";
+            } else {
+                echo 'Processing: '.($event->summary ?? 'Unknown')."\n";
             }
 
             $title = $event->summary ?? 'Unknown Title';
@@ -100,15 +96,14 @@ class CalendarImportService
             $parser = app(EventParser::class);
             try {
                 $parsedData = $parser->parse($title, $location, $description);
-            }
-            catch (\Exception $e) {
-                $this->log("Error parsing description for event '{$title}': " . $e->getMessage());
+            } catch (\Exception $e) {
+                $this->log("Error parsing description for event '{$title}': ".$e->getMessage());
                 // Fallback to empty array to allow partial import or skip?
                 // For now, let's treat it as empty data and rely on defaults/nulls
                 $parsedData = [];
             }
 
-            if (!is_array($parsedData)) {
+            if (! is_array($parsedData)) {
                 $parsedData = [];
             }
 
@@ -123,24 +118,24 @@ class CalendarImportService
             $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
 
             // Fetch metadata if missing
-            if (!$movie->runtime && $movie->title !== 'Unknown Movie') {
+            if (! $movie->runtime && $movie->title !== 'Unknown Movie') {
                 $this->fetchMovieMetadata($movie);
             }
 
             Showing::updateOrCreate(
-            ['google_event_id' => $event->id],
-            [
-                'user_id' => $ticketPayerId, // Main booker
-                'movie_id' => $movie->id,
-                'cinema_id' => $cinema->id,
-                'start_time' => $event->startDateTime ?? $event->startDate,
-                'price_total' => $parsedData['price'] ?? 0,
-                'hall_name' => $parsedData['hall'] ?? null,
-                'booking_reference' => $parsedData['booking_reference'] ?? null,
-                'seat_numbers' => $parsedData['seats'] ?? null,
-                'popcorn_payer_id' => $snackPayerId,
-                'soda_payer_id' => $snackPayerId,
-            ]
+                ['google_event_id' => $event->id],
+                [
+                    'user_id' => $ticketPayerId, // Main booker
+                    'movie_id' => $movie->id,
+                    'cinema_id' => $cinema->id,
+                    'start_time' => $event->startDateTime ?? $event->startDate,
+                    'price_total' => $parsedData['price'] ?? 0,
+                    'hall_name' => $parsedData['hall'] ?? null,
+                    'booking_reference' => $parsedData['booking_reference'] ?? null,
+                    'seat_numbers' => $parsedData['seats'] ?? null,
+                    'popcorn_payer_id' => $snackPayerId,
+                    'soda_payer_id' => $snackPayerId,
+                ]
             );
         }
     }
@@ -156,12 +151,11 @@ class CalendarImportService
                         'tmdb_id' => $details['id'],
                         'runtime' => $details['runtime'] ?? null,
                     ]);
-                    $this->log("Updated metadata for '{$movie->title}': " . ($details['runtime'] ?? '?') . " mins");
+                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins');
                 }
             }
-        }
-        catch (\Exception $e) {
-            $this->log("Error fetching TMDB metadata for '{$movie->title}': " . $e->getMessage());
+        } catch (\Exception $e) {
+            $this->log("Error fetching TMDB metadata for '{$movie->title}': ".$e->getMessage());
         }
     }
 
@@ -186,7 +180,7 @@ class CalendarImportService
 
     private function log(string $message): void
     {
-        echo $message . "\n";
+        echo $message."\n";
         Log::info($message);
     }
 }

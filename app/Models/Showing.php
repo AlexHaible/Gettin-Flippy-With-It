@@ -17,10 +17,12 @@ class Showing extends Model
     {
         return $this->belongsTo(User::class);
     }
+
     public function movie(): BelongsTo
     {
         return $this->belongsTo(Movie::class);
     }
+
     public function cinema(): BelongsTo
     {
         return $this->belongsTo(Cinema::class);
@@ -28,11 +30,11 @@ class Showing extends Model
 
     public function popcornPayer(): BelongsTo
     {
-        return $this->belongsTo(User::class , 'popcorn_payer_id');
+        return $this->belongsTo(User::class, 'popcorn_payer_id');
     }
 
     public function sodaPayer(): BelongsTo
     {
-        return $this->belongsTo(User::class , 'soda_payer_id');
+        return $this->belongsTo(User::class, 'soda_payer_id');
     }
 }

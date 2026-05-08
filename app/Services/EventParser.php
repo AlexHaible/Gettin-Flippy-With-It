@@ -2,24 +2,22 @@
 
 namespace App\Services;
 
-use Gemini\Data\Tool;
+use Gemini\Contracts\ClientContract;
 use Gemini\Data\FunctionDeclaration;
 use Gemini\Data\Schema;
+use Gemini\Data\Tool;
 use Gemini\Enums\DataType;
-use Gemini\Contracts\ClientContract;
 
 class EventParser
 {
-    public function __construct(protected ?ClientContract $client = null)
-    {
-    }
+    public function __construct(protected ?ClientContract $client = null) {}
 
     public function parse(string $title, string $location, string $description): array
     {
         // 1. Initialize Client
-        if (!$this->client) {
+        if (! $this->client) {
             $apiKey = config('services.gemini.api_key');
-            if (!$apiKey) {
+            if (! $apiKey) {
                 throw new \Exception('Gemini API Key not specified in config/services.php (.env GEMINI_API_KEY)');
             }
             $this->client = \Gemini::client($apiKey);
@@ -80,16 +78,16 @@ class EventParser
         );
 
         // 3. Construct the Prompt
-        $prompt = "Analyze this calendar event and extract the movie showing details.\n" .
-            "Event Title: $title\n" .
-            "Location: $location\n" .
-            "Description: $description\n\n" .
-            "Special Rules:\n" .
-            "- If 'IMAX' is in the title, Cinema is 'Vue Fisketorvet' and Hall is 'IMAX'.\n" .
-            "- 'CinemaxX' is now 'Vue Fisketorvet'.\n" .
-            "- Extract 'Sal' number from title if present.\n" .
-            "- Alex = ID 1, Casper = ID 2 (map names in output if possible, otherwise just names).\n" .
-            "Use the extract_showing_data function.";
+        $prompt = "Analyze this calendar event and extract the movie showing details.\n".
+            "Event Title: $title\n".
+            "Location: $location\n".
+            "Description: $description\n\n".
+            "Special Rules:\n".
+            "- If 'IMAX' is in the title, Cinema is 'Vue Fisketorvet' and Hall is 'IMAX'.\n".
+            "- 'CinemaxX' is now 'Vue Fisketorvet'.\n".
+            "- Extract 'Sal' number from title if present.\n".
+            "- Alex = ID 1, Casper = ID 2 (map names in output if possible, otherwise just names).\n".
+            'Use the extract_showing_data function.';
 
         // 4. Call Gemini API
         $response = retry(3, function () use ($prompt, $tool) {

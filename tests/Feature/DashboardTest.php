@@ -39,18 +39,18 @@ class DashboardTest extends TestCase
         $response->assertSee('Total Movies');
         $response->assertSee('1'); // Total count
         $response->assertSee('150 kr.'); // Total spend formatted
-        
+
         $response->assertSee('Total Time');
         $response->assertSee('2,0'); // Value
         $response->assertSee('hrs'); // Unit
-        
+
         $response->assertSee('Avg. Cost / Movie');
         $response->assertSee('150 kr.'); // 150 / 1
-        
+
         $response->assertSee('Cost / Hour');
         $response->assertSee('75'); // Value
         $response->assertSee('kr.'); // Unit (might fail if space is weird)
-        
+
         $response->assertSee('Payer Breakdown');
         $response->assertSee('Weekly Habits');
         $response->assertSee('Vue Test'); // Cinema name

@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Log\Logger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Spatie\LaravelPasskeys\Actions\GeneratePasskeyRegisterOptionsAction;
-use Spatie\LaravelPasskeys\Actions\GeneratePasskeyAuthenticationOptionsAction;
-use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
 use Spatie\LaravelPasskeys\Actions\FindPasskeyToAuthenticateAction;
+use Spatie\LaravelPasskeys\Actions\GeneratePasskeyAuthenticationOptionsAction;
+use Spatie\LaravelPasskeys\Actions\GeneratePasskeyRegisterOptionsAction;
+use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
 
 class AuthController extends Controller
 {
@@ -31,11 +30,11 @@ class AuthController extends Controller
 
         $user = User::where('username', $username)->first();
 
-        if (!$user) {
+        if (! $user) {
             // Create user immediately
             $user = User::create([
                 'username' => $username,
-                'is_current_payer' => false
+                'is_current_payer' => false,
             ]);
 
             // execute() returns the options JSON string
@@ -45,12 +44,12 @@ class AuthController extends Controller
             session([
                 'auth_action' => 'register',
                 'auth_user_id' => $user->id,
-                'passkey-registration-options' => $options // Manual storage required for registration
+                'passkey-registration-options' => $options, // Manual storage required for registration
             ]);
 
             return response()->json([
                 'flow' => 'register',
-                'options' => json_decode($options)
+                'options' => json_decode($options),
             ]);
         }
 
@@ -66,7 +65,7 @@ class AuthController extends Controller
         ]);
 
         return response()->json([
-            'flow'    => 'login',
+            'flow' => 'login',
             'options' => json_decode($options),
         ]);
     }
@@ -93,7 +92,7 @@ class AuthController extends Controller
                 // Retrieve original options from session
                 $optionsJson = session('passkey-registration-options');
 
-                $passkeyName = $user->username . '-' . Str::uuid();
+                $passkeyName = $user->username.'-'.Str::uuid();
 
                 app(StorePasskeyAction::class)->execute(
                     $user,
@@ -162,14 +161,16 @@ class AuthController extends Controller
             return response()->json(['redirect' => '/']);
 
         } catch (\Exception $e) {
-            logger()->error('Passkey Error: ' . $e->getMessage());
-            return response()->json(['message' => 'Authentication failed. ' . $e->getMessage()], 422);
+            logger()->error('Passkey Error: '.$e->getMessage());
+
+            return response()->json(['message' => 'Authentication failed. '.$e->getMessage()], 422);
         }
     }
 
     public function logout()
     {
         Auth::logout();
+
         return redirect('/');
     }
 }

@@ -2,15 +2,14 @@
 
 namespace Tests\Feature;
 
-use App\Models\Showing;
 use App\Models\User;
 use App\Services\CalendarImportService;
 use App\Services\EventParser;
+use App\Services\TmdbService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
-use App\Services\TmdbService;
-use Illuminate\Support\Facades\Log;
 
 class CalendarImportServiceTest extends TestCase
 {
@@ -18,6 +17,7 @@ class CalendarImportServiceTest extends TestCase
 
     /**
      * @runInSeparateProcess
+     *
      * @preserveGlobalState disabled
      */
     public function test_it_imports_events_and_saves_structured_data()
@@ -40,26 +40,26 @@ class CalendarImportServiceTest extends TestCase
             'ticket_payer' => 'Alex',
             'snack_payer' => 'Casper',
             'booking_reference' => 'REF123',
-            'seats' => 'A1, A2'
+            'seats' => 'A1, A2',
         ]);
 
-        $this->app->instance(EventParser::class , $mockParser);
+        $this->app->instance(EventParser::class, $mockParser);
 
         // 3. Mock the implementation of the Event class
         // We use an external mock to intercept the static call `Event::get`
         $eventMock = Mockery::mock('overload:Spatie\GoogleCalendar\Event');
 
-        $eventData = new \stdClass();
+        $eventData = new \stdClass;
         $eventData->id = 'google_id_123';
         $eventData->summary = 'Mock Movie at Mock Cinema';
         $eventData->location = 'Mock Cinema';
         $eventData->description = 'Description';
         $eventData->startDateTime = now();
-        $eventData->attendees = [(object)['email' => 'service@example.com']];
+        $eventData->attendees = [(object) ['email' => 'service@example.com']];
 
-        // When iterating, the service accesses properties. 
+        // When iterating, the service accesses properties.
         // If the service uses magic getters on the real class, we need to ensure our mock or object supports them.
-        // The service accesses properties directly: $event->summary. 
+        // The service accesses properties directly: $event->summary.
         // stdClass supports this perfectly.
 
         $eventMock->shouldReceive('get')

@@ -116,7 +116,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Recent Showings -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
-                <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider">Recent Showings</h2>
+                <a href="{{ route('showings.index') }}" class="group flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold font-display text-gold-500 tracking-wider group-hover:text-gold-300 transition-colors">Recent Showings</h2>
+                    <span class="text-gold-600 group-hover:text-gold-400 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </span>
+                </a>
                 <div class="space-y-4">
                     @forelse($recentShowings as $showing)
                     <div

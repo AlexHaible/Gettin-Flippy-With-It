@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Http;
 class TmdbService
 {
     protected string $baseUrl = 'https://api.themoviedb.org/3';
+
     protected ?string $apiKey;
 
     public function __construct()
@@ -16,7 +17,7 @@ class TmdbService
 
     public function searchMovie(string $title): ?array
     {
-        if (!$this->apiKey) {
+        if (! $this->apiKey) {
             return null;
         }
 
@@ -34,7 +35,7 @@ class TmdbService
 
     public function getMovieDetails(int $tmdbId): ?array
     {
-        if (!$this->apiKey) {
+        if (! $this->apiKey) {
             return null;
         }
 

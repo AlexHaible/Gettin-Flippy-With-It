@@ -2,11 +2,11 @@
 
 namespace App\Livewire;
 
+use App\Models\Showing;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Livewire\Component;
-use App\Models\User;
-use App\Models\Showing;
-use Illuminate\Support\Facades\Auth;
 
 class PayerControl extends Component
 {
@@ -57,7 +57,7 @@ class PayerControl extends Component
                 $targetShowing = $upcoming;
             }
 
-            // Only update if we found a relevant showing. 
+            // Only update if we found a relevant showing.
             // We assume explicit user intent "Flip" = "Confirm Payment for current event".
             if ($targetShowing) {
                 $targetShowing->update([
@@ -65,7 +65,7 @@ class PayerControl extends Component
                     'soda_payer_id' => $previousPayer->id,
                 ]);
             }
-            
+
             // Clear current payer
             $previousPayer->update(['is_current_payer' => false]);
         }

@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Cinema;
 use App\Models\Movie;
 use App\Models\Showing;
-use Illuminate\Http\Request;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -48,21 +48,21 @@ class DashboardController extends Controller
         $splitAmount = $totalSpent / 2;
         $splitTickets = $totalShowings / 2;
 
-        $alex = \App\Models\User::find(1);
-        $casper = \App\Models\User::find(2);
+        $alex = User::find(1);
+        $casper = User::find(2);
 
-        if (!$casper) {
-            $casper = new \App\Models\User(['username' => 'Casper']);
+        if (! $casper) {
+            $casper = new User(['username' => 'Casper']);
             $casper->id = 2; // Mock ID for view logic if needed
         }
 
         $payerStats = collect([
-            (object)[
+            (object) [
                 'user' => $alex,
                 'total_spent' => $splitAmount,
                 'tickets_bought' => $splitTickets,
             ],
-            (object)[
+            (object) [
                 'user' => $casper,
                 'total_spent' => $splitAmount,
                 'tickets_bought' => $splitTickets,
@@ -74,8 +74,8 @@ class DashboardController extends Controller
         $defaultStats = array_fill_keys($days, 0);
 
         $dayOfWeekStats = Showing::all()
-            ->groupBy(fn($showing) => $showing->start_time->format('l'))
-            ->map(fn($group) => $group->count())
+            ->groupBy(fn ($showing) => $showing->start_time->format('l'))
+            ->map(fn ($group) => $group->count())
             ->union($defaultStats);
 
         return view('dashboard', [

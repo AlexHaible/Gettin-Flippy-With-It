@@ -7,6 +7,7 @@ use App\Models\Movie;
 use App\Models\Showing;
 use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Spatie\GoogleCalendar\Event;
 

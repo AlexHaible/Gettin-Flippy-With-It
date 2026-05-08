@@ -11,13 +11,21 @@ class WrappedController extends Controller
     {
         $year = $year ?? now()->year;
 
+        $availableYears = Showing::whereNotNull('start_time')
+            ->get()
+            ->pluck('start_time')
+            ->map(fn($date) => $date->year)
+            ->unique()
+            ->sortDesc()
+            ->values();
+
         $showings = Showing::with(['movie', 'cinema', 'popcornPayer', 'user'])
             ->whereYear('start_time', $year)
             ->where('start_time', '<=', now())
             ->get();
 
         if ($showings->isEmpty()) {
-            return view('wrapped', ['year' => $year, 'hasData' => false]);
+            return view('wrapped', ['year' => $year, 'hasData' => false, 'availableYears' => $availableYears]);
         }
 
         $totalSpent = $showings->sum('price_total');
@@ -58,6 +66,7 @@ class WrappedController extends Controller
             'alexSnacks' => $alexSnacks,
             'casperSnacks' => $casperSnacks,
             'heroBackdrop' => $heroBackdrop,
+            'availableYears' => $availableYears,
         ]);
     }
 }

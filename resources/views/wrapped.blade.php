@@ -17,6 +17,19 @@
                 Wrapped {{ $year }}
             </h1>
             <p class="text-xl text-gold-300 font-serif tracking-widest">Your Cinematic Journey</p>
+            
+            @if(isset($availableYears) && $availableYears->count() > 1)
+            <div class="flex flex-wrap justify-center gap-2 mt-6">
+                @foreach($availableYears as $avYear)
+                    <a href="{{ route('wrapped', ['year' => $avYear]) }}" 
+                       class="px-4 py-1 rounded-full text-sm font-bold tracking-widest transition-all
+                       {{ $year == $avYear ? 'bg-gold-500 text-noir-900 shadow-[0_0_10px_var(--color-gold-500)]' : 'bg-noir-900/50 text-gold-400 border border-gold-600/50 hover:border-gold-400 hover:text-gold-200 backdrop-blur-sm' }}">
+                        {{ $avYear }}
+                    </a>
+                @endforeach
+            </div>
+            @endif
+            
             <div class="deco-divider w-64 mx-auto mt-8"></div>
         </div>
 

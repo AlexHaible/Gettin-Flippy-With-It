@@ -91,7 +91,7 @@ class Watchlist extends Component
     public function render()
     {
         return view('livewire.watchlist', [
-            'watchlistMovies' => WatchlistMovie::with('users')->orderByDesc('created_at')->get(),
+            'watchlistMovies' => WatchlistMovie::with('users')->orderByRaw('release_date IS NULL')->orderBy('release_date')->get(),
         ])->layout('components.layouts.app');
     }
 }

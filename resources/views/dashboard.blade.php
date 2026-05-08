@@ -242,18 +242,17 @@
                     @endforeach
                 </div>
             </div>
-            </div>
         </div>
-        
+
         <!-- Recommendations -->
         @if($recommendations->isNotEmpty())
         <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20 mb-8">
             <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider">In Theaters: You Should See</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-4 gap-3">
                 @foreach($recommendations as $movie)
                 <div class="relative group overflow-hidden rounded border border-gold-900/50">
                     @if(!empty($movie['poster_path']))
-                        <img src="https://image.tmdb.org/t/p/w300{{ $movie['poster_path'] }}" class="w-full h-auto object-cover transition duration-300 group-hover:scale-105">
+                        <img src="https://image.tmdb.org/t/p/w185{{ $movie['poster_path'] }}" class="w-full h-36 object-cover transition duration-300 group-hover:scale-105">
                     @else
                         <div class="w-full h-48 bg-noir-950 flex items-center justify-center text-gold-800 text-xs text-center p-2">{{ $movie['title'] }}</div>
                     @endif

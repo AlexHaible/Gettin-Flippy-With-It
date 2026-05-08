@@ -265,5 +265,33 @@
             </div>
         </div>
         @endif
+
+        {{-- Rewatch Radar --}}
+        @if($rewatchRadar)
+        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20 mb-8">
+            <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider flex items-center gap-2">
+                <svg class="w-5 h-5 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Rewatch Radar
+            </h2>
+            <div class="flex items-center gap-6">
+                @if($rewatchRadar['prev_poster'])
+                    <img src="https://image.tmdb.org/t/p/w200{{ $rewatchRadar['prev_poster'] }}"
+                         class="w-20 rounded shadow-lg shadow-black flex-shrink-0">
+                @endif
+                <div>
+                    <p class="text-gold-600 text-xs uppercase tracking-widest mb-1">Before you see…</p>
+                    <p class="text-gold-300 font-bold font-display text-lg">{{ $rewatchRadar['watchlist_title'] }}</p>
+                    <p class="text-gold-600 text-sm mt-2">…time to rewatch</p>
+                    <p class="text-gold-100 font-bold font-display text-xl mt-0.5">
+                        {{ $rewatchRadar['prev_title'] }}
+                        @if($rewatchRadar['prev_year'])
+                            <span class="text-gold-700 text-sm font-normal">({{ $rewatchRadar['prev_year'] }})</span>
+                        @endif
+                    </p>
+                    <p class="text-gold-700 text-xs mt-2 italic">Part of the {{ $rewatchRadar['collection_name'] }}</p>
+                </div>
+            </div>
+        </div>
+        @endif
     </div>
 </x-layouts.app>

@@ -42,4 +42,13 @@ class Showing extends Model
     {
         return $this->hasMany(Rating::class);
     }
+
+    protected static function booted(): void
+    {
+        static::saved(function (Showing $showing) {
+            // Reload fresh relations so BingoService always has up-to-date data
+            $showing->load(['movie', 'cinema', 'ratings']);
+            app(\App\Services\BingoService::class)->evaluate($showing);
+        });
+    }
 }

@@ -25,21 +25,30 @@ class Watchlist extends Component
 
     public function addMovie($tmdbId, $title, $posterPath, $releaseDate)
     {
+        // Fetch full details to get the collection_id if available
+        $details = app(TmdbService::class)->getMovieDetails($tmdbId);
+        $collectionId = $details['belongs_to_collection']['id'] ?? null;
+
         $movie = WatchlistMovie::firstOrCreate(
             ['tmdb_id' => $tmdbId],
             [
-                'title' => $title,
-                'poster_path' => $posterPath,
-                'release_date' => $releaseDate,
+                'title'         => $title,
+                'poster_path'   => $posterPath,
+                'release_date'  => $releaseDate,
+                'collection_id' => $collectionId,
             ]
         );
+
+        // Update collection_id if missing on an existing record
+        if ($movie->collection_id === null && $collectionId) {
+            $movie->update(['collection_id' => $collectionId]);
+        }
 
         $userId = auth()->id();
 
         if (!$movie->users()->where('user_id', $userId)->exists()) {
             $movie->users()->attach($userId);
-            
-            // Check for Mutual Hype
+
             if ($movie->users()->count() >= 2) {
                 $this->dispatchMutualHypeWebhook($movie);
             }

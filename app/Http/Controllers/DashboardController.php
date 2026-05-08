@@ -6,6 +6,8 @@ use App\Models\Cinema;
 use App\Models\Movie;
 use App\Models\Showing;
 use App\Models\User;
+use App\Models\WatchlistMovie;
+use App\Services\TmdbService;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -159,6 +161,33 @@ class DashboardController extends Controller
             $recommendations = $pool->take(4);
         }
 
+        // 15. Rewatch Radar
+        $rewatchRadar = null;
+        $watchlistWithCollections = WatchlistMovie::whereNotNull('collection_id')->get();
+
+        foreach ($watchlistWithCollections as $watchlistMovie) {
+            $collection = app(TmdbService::class)->getCollection($watchlistMovie->collection_id);
+            if (!$collection) continue;
+
+            $parts = collect($collection['parts'] ?? [])
+                ->sortBy('release_date')
+                ->values();
+
+            $targetIndex = $parts->search(fn($p) => $p['id'] === $watchlistMovie->tmdb_id);
+
+            if ($targetIndex !== false && $targetIndex > 0) {
+                $prev = $parts[$targetIndex - 1];
+                $rewatchRadar = [
+                    'watchlist_title' => $watchlistMovie->title,
+                    'prev_title'      => $prev['title'],
+                    'prev_poster'     => $prev['poster_path'] ?? null,
+                    'prev_year'       => isset($prev['release_date']) ? substr($prev['release_date'], 0, 4) : null,
+                    'collection_name' => $collection['name'],
+                ];
+                break;
+            }
+        }
+
         return view('dashboard', [
             'totalShowings' => $totalShowings,
             'totalMovies' => $totalMovies,
@@ -176,9 +205,10 @@ class DashboardController extends Controller
             'topActor' => $topActor,
             'topGenreCount' => $genreCounts[$topGenre] ?? 0,
             'topActorCount' => $actorCounts[$topActor] ?? 0,
-            'projectedMovies' => $projectedMovies,
-            'projectedSpend' => $projectedSpend,
-            'recommendations' => $recommendations,
+            'projectedMovies'  => $projectedMovies,
+            'projectedSpend'   => $projectedSpend,
+            'recommendations'  => $recommendations,
+            'rewatchRadar'     => $rewatchRadar,
         ]);
     }
 }

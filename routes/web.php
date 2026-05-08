@@ -29,4 +29,6 @@ Route::middleware('auth')->group(function () {
     
     Route::get('/actor/{name}', [\App\Http\Controllers\EntityController::class, 'actor'])->name('actor');
     Route::get('/genre/{name}', [\App\Http\Controllers\EntityController::class, 'genre'])->name('genre');
+    Route::get('/bingo', [\App\Http\Controllers\BingoController::class, 'index'])->name('bingo');
+    Route::get('/archive', [\App\Http\Controllers\ArchiveController::class, 'index'])->name('archive');
 });

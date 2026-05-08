@@ -84,4 +84,15 @@ class TmdbService
 
         return $response->successful() ? $response->json('results', []) : [];
     }
+
+    public function getCollection(int $collectionId): ?array
+    {
+        if (! $this->apiKey) return null;
+
+        $response = Http::get("{$this->baseUrl}/collection/{$collectionId}", [
+            'api_key' => $this->apiKey,
+        ]);
+
+        return $response->successful() ? $response->json() : null;
+    }
 }

@@ -83,6 +83,33 @@
                     @endif
                 </div>
                 @endif
+
+                @if($biggestDisagreement)
+                <div class="bg-gradient-to-r from-noir-950 to-red-950/30 border border-gold-800 rounded-lg p-8 flex flex-col md:flex-row items-center justify-between shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 bg-gold-900/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="mb-6 md:mb-0 z-10 relative w-full">
+                        <p class="text-gold-600 text-sm uppercase tracking-widest mb-2 font-bold">Biggest Disagreement</p>
+                        <h3 class="text-3xl font-display text-gold-100 font-bold">{{ $biggestDisagreement->movie->title }}</h3>
+                        
+                        <div class="mt-4 flex gap-6">
+                            @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)
+                                @php
+                                    $rating = $biggestDisagreement->ratings->firstWhere('user_id', $uid);
+                                @endphp
+                                <div>
+                                    <p class="text-gold-500 text-xs uppercase tracking-widest">{{ $name }}</p>
+                                    <span class="text-lg font-bold uppercase tracking-wide {{ $rating ? ($rating->score == 'liked' ? 'text-green-400' : ($rating->score == 'disliked' ? 'text-red-400' : 'text-gray-300')) : 'text-gold-800 italic' }}">
+                                        {{ $rating ? $rating->score : 'Unrated' }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                    @if($biggestDisagreement->movie->poster_path)
+                        <img src="https://image.tmdb.org/t/p/w200{{ $biggestDisagreement->movie->poster_path }}" class="w-24 h-36 object-cover rounded shadow-lg shadow-black group-hover:scale-105 transition-transform z-10 relative">
+                    @endif
+                </div>
+                @endif
             </div>
 
             <!-- Bottom Stats -->

@@ -73,9 +73,9 @@ class CalendarImportService
                 $isUnknown = ($existingShowing->movie && $existingShowing->movie->title === 'Unknown Movie') ||
                     ($existingShowing->cinema && $existingShowing->cinema->name === 'Unknown Cinema');
 
-                // BACKFILL: Check if we need to fetch metadata (Runtime, Poster) for existing valid movies
+                // BACKFILL: Check if we need to fetch metadata (Runtime, Poster, Genres) for existing valid movies
                 if ($existingShowing->movie && $existingShowing->movie->title !== 'Unknown Movie') {
-                    if (! $existingShowing->movie->runtime || ! $existingShowing->movie->poster_path) {
+                    if (! $existingShowing->movie->runtime || ! $existingShowing->movie->poster_path || ! $existingShowing->movie->genres) {
                         $this->log('Backfilling metadata for: '.$existingShowing->movie->title);
                         $this->fetchMovieMetadata($existingShowing->movie);
                     }
@@ -169,13 +169,20 @@ class CalendarImportService
             if ($searchResult && isset($searchResult['id'])) {
                 $details = $this->tmdbService->getMovieDetails($searchResult['id']);
                 if ($details) {
+                    $genres = collect($details['genres'] ?? [])->pluck('name')->toJson();
+                    $director = collect($details['credits']['crew'] ?? [])->firstWhere('job', 'Director')['name'] ?? null;
+                    $cast = collect($details['credits']['cast'] ?? [])->take(3)->pluck('name')->toJson();
+
                     $movie->update([
                         'tmdb_id' => $details['id'],
                         'runtime' => $details['runtime'] ?? null,
                         'poster_path' => $details['poster_path'] ?? null,
                         'backdrop_path' => $details['backdrop_path'] ?? null,
+                        'genres' => $genres,
+                        'director' => $director,
+                        'cast' => $cast,
                     ]);
-                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins, poster, backdrop');
+                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins, poster, backdrop, genres, cast');
                 }
             }
         } catch (\Exception $e) {

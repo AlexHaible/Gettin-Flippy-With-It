@@ -111,6 +111,20 @@
                 <p class="text-xl text-gold-800">No data</p>
                 @endif
             </div>
+
+            <!-- Top Genre -->
+            <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
+                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Top Genre</h3>
+                <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topGenre }}">{{ $topGenre }}</p>
+                <p class="text-gold-700 text-xs mt-1">{{ $topGenreCount }} movies</p>
+            </div>
+
+            <!-- Top Actor -->
+            <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
+                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Top Actor</h3>
+                <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topActor }}">{{ $topActor }}</p>
+                <p class="text-gold-700 text-xs mt-1">{{ $topActorCount }} movies</p>
+            </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">

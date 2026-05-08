@@ -93,6 +93,32 @@ class DashboardController extends Controller
             $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $recentShowings->first()->movie->backdrop_path;
         }
 
+        // 12. Most Watched Actor & Top Genre
+        $allMovies = Movie::withCount('showings')->get();
+        
+        $genreCounts = [];
+        $actorCounts = [];
+
+        foreach ($allMovies as $movie) {
+            if ($movie->showings_count == 0) continue;
+
+            $genres = json_decode($movie->genres, true) ?? [];
+            foreach ($genres as $genre) {
+                $genreCounts[$genre] = ($genreCounts[$genre] ?? 0) + $movie->showings_count;
+            }
+
+            $cast = json_decode($movie->cast, true) ?? [];
+            foreach ($cast as $actor) {
+                $actorCounts[$actor] = ($actorCounts[$actor] ?? 0) + $movie->showings_count;
+            }
+        }
+
+        arsort($genreCounts);
+        arsort($actorCounts);
+
+        $topGenre = key($genreCounts) ?? 'N/A';
+        $topActor = key($actorCounts) ?? 'N/A';
+
         return view('dashboard', [
             'totalShowings' => $totalShowings,
             'totalMovies' => $totalMovies,
@@ -106,6 +132,10 @@ class DashboardController extends Controller
             'dayOfWeekStats' => $dayOfWeekStats,
             'upcomingShowings' => $upcomingShowings,
             'heroBackdrop' => $heroBackdrop,
+            'topGenre' => $topGenre,
+            'topActor' => $topActor,
+            'topGenreCount' => $genreCounts[$topGenre] ?? 0,
+            'topActorCount' => $actorCounts[$topActor] ?? 0,
         ]);
     }
 }

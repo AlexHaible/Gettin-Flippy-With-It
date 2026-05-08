@@ -19,7 +19,7 @@ class WrappedController extends Controller
             ->sortDesc()
             ->values();
 
-        $showings = Showing::with(['movie', 'cinema', 'popcornPayer', 'user'])
+        $showings = Showing::with(['movie', 'cinema', 'popcornPayer', 'user', 'ratings'])
             ->whereYear('start_time', $year)
             ->where('start_time', '<=', now())
             ->get();
@@ -53,6 +53,26 @@ class WrappedController extends Controller
             ? 'https://image.tmdb.org/t/p/original' . $moviesWithBackdrop->random()->movie->backdrop_path 
             : null;
 
+        $biggestDisagreement = null;
+        $maxDiff = -1;
+        $scoreMap = ['liked' => 3, 'meh' => 2, 'disliked' => 1];
+
+        foreach ($showings as $showing) {
+            $alexRating = $showing->ratings->firstWhere('user_id', 1);
+            $casperRating = $showing->ratings->firstWhere('user_id', 2);
+
+            if ($alexRating && $casperRating) {
+                $alexScore = $scoreMap[$alexRating->score] ?? 2;
+                $casperScore = $scoreMap[$casperRating->score] ?? 2;
+                
+                $diff = abs($alexScore - $casperScore);
+                if ($diff > $maxDiff && $diff > 0) {
+                    $maxDiff = $diff;
+                    $biggestDisagreement = $showing;
+                }
+            }
+        }
+
         return view('wrapped', [
             'year' => $year,
             'hasData' => true,
@@ -67,6 +87,7 @@ class WrappedController extends Controller
             'casperSnacks' => $casperSnacks,
             'heroBackdrop' => $heroBackdrop,
             'availableYears' => $availableYears,
+            'biggestDisagreement' => $biggestDisagreement,
         ]);
     }
 }

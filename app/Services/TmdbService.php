@@ -41,6 +41,7 @@ class TmdbService
 
         $response = Http::get("{$this->baseUrl}/movie/{$tmdbId}", [
             'api_key' => $this->apiKey,
+            'append_to_response' => 'credits',
         ]);
 
         if ($response->successful()) {

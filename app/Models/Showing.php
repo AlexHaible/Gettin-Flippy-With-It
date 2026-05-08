@@ -37,4 +37,9 @@ class Showing extends Model
     {
         return $this->belongsTo(User::class, 'soda_payer_id');
     }
+
+    public function ratings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
 }

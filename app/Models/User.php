@@ -39,7 +39,7 @@ class User extends Authenticatable implements HasPasskeys
 
     public function watchlistMovies()
     {
-        return $this->belongsToMany(WatchlistMovie::class)->withTimestamps();
+        return $this->belongsToMany(WatchlistMovie::class, 'watchlist_movie_user')->withTimestamps();
     }
 
     #[Override]

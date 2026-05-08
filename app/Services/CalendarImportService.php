@@ -72,9 +72,9 @@ class CalendarImportService
                 $isUnknown = ($existingShowing->movie && $existingShowing->movie->title === 'Unknown Movie') ||
                     ($existingShowing->cinema && $existingShowing->cinema->name === 'Unknown Cinema');
 
-                // BACKFILL: Check if we need to fetch metadata (Runtime) for existing valid movies
+                // BACKFILL: Check if we need to fetch metadata (Runtime, Poster) for existing valid movies
                 if ($existingShowing->movie && $existingShowing->movie->title !== 'Unknown Movie') {
-                    if (! $existingShowing->movie->runtime) {
+                    if (! $existingShowing->movie->runtime || ! $existingShowing->movie->poster_path) {
                         $this->log('Backfilling metadata for: '.$existingShowing->movie->title);
                         $this->fetchMovieMetadata($existingShowing->movie);
                     }
@@ -118,25 +118,46 @@ class CalendarImportService
             $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
 
             // Fetch metadata if missing
-            if (! $movie->runtime && $movie->title !== 'Unknown Movie') {
+            if ((! $movie->runtime || ! $movie->poster_path) && $movie->title !== 'Unknown Movie') {
                 $this->fetchMovieMetadata($movie);
             }
 
-            Showing::updateOrCreate(
-                ['google_event_id' => $event->id],
-                [
-                    'user_id' => $ticketPayerId, // Main booker
-                    'movie_id' => $movie->id,
-                    'cinema_id' => $cinema->id,
-                    'start_time' => $event->startDateTime ?? $event->startDate,
-                    'price_total' => $parsedData['price'] ?? 0,
-                    'hall_name' => $parsedData['hall'] ?? null,
-                    'booking_reference' => $parsedData['booking_reference'] ?? null,
-                    'seat_numbers' => $parsedData['seats'] ?? null,
-                    'popcorn_payer_id' => $snackPayerId,
-                    'soda_payer_id' => $snackPayerId,
-                ]
-            );
+            $showing = Showing::firstOrNew(['google_event_id' => $event->id]);
+            $showing->fill([
+                'user_id' => $ticketPayerId, // Main booker
+                'movie_id' => $movie->id,
+                'cinema_id' => $cinema->id,
+                'start_time' => $event->startDateTime ?? $event->startDate,
+                'price_total' => $parsedData['price'] ?? 0,
+                'hall_name' => $parsedData['hall'] ?? null,
+                'booking_reference' => $parsedData['booking_reference'] ?? null,
+                'seat_numbers' => $parsedData['seats'] ?? null,
+                'popcorn_payer_id' => $snackPayerId,
+                'soda_payer_id' => $snackPayerId,
+            ]);
+            $showing->save();
+
+            // Webhook Notification
+            if ($showing->wasRecentlyCreated && $showing->start_time > now()) {
+                try {
+                    $payerName = User::find($snackPayerId)?->username ?? 'Unknown';
+                    $message = "🍿 *Popcorn Protocol*: New movie booked!\n";
+                    $message .= "*{$movie->title}* at {$cinema->name} on " . $showing->start_time->format('l, jS M Y H:i') . ".\n";
+                    $message .= "It's *{$payerName}*'s turn to buy snacks!";
+
+                    $discordWebhook = env('DISCORD_WEBHOOK_URL');
+                    if ($discordWebhook) {
+                        Http::post($discordWebhook, ['content' => str_replace('*', '**', $message)]);
+                    }
+
+                    $slackWebhook = env('SLACK_WEBHOOK_URL');
+                    if ($slackWebhook) {
+                        Http::post($slackWebhook, ['text' => $message]);
+                    }
+                } catch (\Exception $e) {
+                    $this->log("Error dispatching webhooks: " . $e->getMessage());
+                }
+            }
         }
     }
 
@@ -150,8 +171,10 @@ class CalendarImportService
                     $movie->update([
                         'tmdb_id' => $details['id'],
                         'runtime' => $details['runtime'] ?? null,
+                        'poster_path' => $details['poster_path'] ?? null,
+                        'backdrop_path' => $details['backdrop_path'] ?? null,
                     ]);
-                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins');
+                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins, poster, backdrop');
                 }
             }
         } catch (\Exception $e) {

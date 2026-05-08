@@ -21,10 +21,17 @@
         <div class="space-y-4">
             @forelse($showings as $showing)
             <div class="flex justify-between items-center border-b border-gold-900/30 pb-4 last:border-0 last:pb-0">
-                <div>
-                    <h4 class="text-lg font-semibold text-gold-100 font-display">{{ $showing->movie->title }}</h4>
-                    <p class="text-gold-600 text-sm">{{ $showing->cinema->name }} • {{ $showing->hall_name ?? 'N/A' }}</p>
-                    <p class="text-gold-700 text-xs">{{ $showing->start_time->format('d/m/Y H:i') }}</p>
+                <div class="flex items-center space-x-4">
+                    @if($showing->movie->poster_path)
+                        <img src="https://image.tmdb.org/t/p/w200{{ $showing->movie->poster_path }}" alt="{{ $showing->movie->title }} Poster" class="w-16 h-24 object-cover rounded shadow-sm shadow-gold-900/50">
+                    @else
+                        <div class="w-16 h-24 bg-noir-800 rounded flex items-center justify-center text-gold-700 text-xs border border-gold-900/50">No Poster</div>
+                    @endif
+                    <div>
+                        <h4 class="text-lg font-semibold text-gold-100 font-display">{{ $showing->movie->title }}</h4>
+                        <p class="text-gold-600 text-sm">{{ $showing->cinema->name }} • {{ $showing->hall_name ?? 'N/A' }}</p>
+                        <p class="text-gold-700 text-xs">{{ $showing->start_time->format('d/m/Y H:i') }}</p>
+                    </div>
                 </div>
                 <div class="text-right">
                     <span class="block text-gold-400 font-bold">{{ number_format($showing->price_total, 0, ',', '.') }} kr.</span>

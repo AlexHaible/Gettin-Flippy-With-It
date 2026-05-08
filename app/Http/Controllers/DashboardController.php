@@ -73,10 +73,25 @@ class DashboardController extends Controller
         $days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
         $defaultStats = array_fill_keys($days, 0);
 
-        $dayOfWeekStats = Showing::all()
+        $dayOfWeekStats = Showing::where('start_time', '<=', now())
+            ->get()
             ->groupBy(fn ($showing) => $showing->start_time->format('l'))
             ->map(fn ($group) => $group->count())
             ->union($defaultStats);
+
+        // 10. Upcoming Showings
+        $upcomingShowings = Showing::with(['movie', 'cinema'])
+            ->where('start_time', '>', now())
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        // 11. Dynamic Backdrop
+        $heroBackdrop = null;
+        if ($upcomingShowings->isNotEmpty() && $upcomingShowings->first()->movie->backdrop_path) {
+            $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $upcomingShowings->first()->movie->backdrop_path;
+        } elseif ($recentShowings->isNotEmpty() && $recentShowings->first()->movie->backdrop_path) {
+            $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $recentShowings->first()->movie->backdrop_path;
+        }
 
         return view('dashboard', [
             'totalShowings' => $totalShowings,
@@ -89,6 +104,8 @@ class DashboardController extends Controller
             'recentShowings' => $recentShowings,
             'payerStats' => $payerStats,
             'dayOfWeekStats' => $dayOfWeekStats,
+            'upcomingShowings' => $upcomingShowings,
+            'heroBackdrop' => $heroBackdrop,
         ]);
     }
 }

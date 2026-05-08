@@ -1,11 +1,62 @@
 <x-layouts.app>
+    @if(isset($heroBackdrop) && $heroBackdrop)
+    <style>
+        body {
+            background-image: url('{{ $heroBackdrop }}') !important;
+            background-size: cover !important;
+            background-position: center 20% !important;
+            background-attachment: fixed !important;
+            background-repeat: no-repeat !important;
+            backdrop-filter: brightness(0.2) !important;
+        }
+    </style>
+    @endif
+
     <div class="container mx-auto px-4 py-8">
         <div class="relative z-10 mb-8 text-center">
             <div class="deco-divider w-56 mx-auto mb-4"></div>
-            <h1 class="text-4xl font-display font-bold text-gold-500 text-shadow-gold uppercase tracking-[0.2em]">
+            <h1 class="text-4xl font-display font-bold text-gold-500 text-shadow-gold uppercase tracking-[0.2em] mb-2">
                 Dashboard</h1>
+            <a href="{{ route('wrapped', ['year' => now()->year]) }}" class="inline-block text-gold-400 hover:text-gold-200 text-sm tracking-widest uppercase border border-gold-600/50 hover:border-gold-400 px-4 py-1 rounded-full transition-all bg-noir-900/50 backdrop-blur-sm">
+                🍿 View {{ now()->year }} Wrapped
+            </a>
             <div class="deco-divider w-56 mx-auto mt-4"></div>
         </div>
+
+        @if(isset($upcomingShowings) && $upcomingShowings->isNotEmpty())
+        <!-- Upcoming Movie Night -->
+        <div class="mb-8">
+            <div class="bg-noir-900/90 deco-border-metallic border-2 border-gold-400 rounded-lg p-6 shadow-[0_0_20px_var(--color-gold-500)] relative overflow-hidden">
+                <!-- Shimmer effect -->
+                <div class="absolute top-0 -inset-full h-full w-1/2 z-5 block transform -skew-x-12 bg-gradient-to-r from-transparent to-white opacity-10 animate-shimmer"></div>
+                
+                <h2 class="text-2xl font-bold font-display text-gold-500 mb-4 tracking-wider flex items-center">
+                    <svg class="w-6 h-6 mr-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Upcoming Movie Night
+                </h2>
+                
+                @php $nextShowing = $upcomingShowings->first(); @endphp
+                <div class="flex flex-col md:flex-row md:items-center justify-between">
+                    <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                        @if($nextShowing->movie->poster_path)
+                            <img src="https://image.tmdb.org/t/p/w200{{ $nextShowing->movie->poster_path }}" alt="Poster" class="w-20 h-32 object-cover rounded shadow-md border border-gold-800">
+                        @endif
+                        <div>
+                            <h3 class="text-3xl font-bold font-display text-gold-100">{{ $nextShowing->movie->title }}</h3>
+                            <p class="text-gold-500 text-lg">{{ $nextShowing->cinema->name }} • {{ $nextShowing->hall_name ?? 'TBA' }}</p>
+                            <p class="text-gold-400 font-mono mt-1">{{ $nextShowing->start_time->diffForHumans() }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-noir-950 p-4 rounded border border-gold-900/50 text-center">
+                        <p class="text-sm text-gold-600 uppercase tracking-widest mb-1">Snack Payer</p>
+                        <p class="text-xl font-bold text-gold-400">{{ $nextShowing->popcornPayer->username ?? 'Unknown' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
 
         <!-- Stats Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

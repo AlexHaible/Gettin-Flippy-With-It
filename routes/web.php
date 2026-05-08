@@ -18,7 +18,11 @@ Route::middleware('guest')->group(function () {
     Route::post('/auth/finish', [AuthController::class, 'finish'])->name('auth.finish');
 });
 
+use App\Livewire\ShowingsList;
+use App\Http\Controllers\WrappedController;
+
 Route::middleware('auth')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/showings', \App\Livewire\ShowingsList::class)->name('showings.index');
+    Route::get('/showings', ShowingsList::class)->name('showings.index');
+    Route::get('/wrapped/{year?}', [WrappedController::class, 'show'])->name('wrapped');
 });

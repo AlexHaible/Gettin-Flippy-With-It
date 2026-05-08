@@ -25,9 +25,19 @@ class DashboardTest extends TestCase
             'user_id' => $user->id,
             'movie_id' => $movie->id,
             'cinema_id' => $cinema->id,
-            'start_time' => now(),
+            'start_time' => now()->subDays(1),
             'price_total' => 150,
             'google_event_id' => 'test-event-1',
+        ]);
+
+        Showing::create([
+            'user_id' => $user->id,
+            'movie_id' => $movie->id,
+            'cinema_id' => $cinema->id,
+            'start_time' => now()->addDays(2),
+            'price_total' => 0,
+            'google_event_id' => 'test-event-2',
+            'popcorn_payer_id' => $user->id,
         ]);
 
         // Act
@@ -37,23 +47,23 @@ class DashboardTest extends TestCase
         $response->assertStatus(200);
         $response->assertViewIs('dashboard');
         $response->assertSee('Total Movies');
-        $response->assertSee('1'); // Total count
+        $response->assertSee('2'); // Total count
         $response->assertSee('150 kr.'); // Total spend formatted
 
         $response->assertSee('Total Time');
-        $response->assertSee('2,0'); // Value
+        $response->assertSee('4,0'); // Value
         $response->assertSee('hrs'); // Unit
 
         $response->assertSee('Avg. Cost / Movie');
-        $response->assertSee('150 kr.'); // 150 / 1
+        $response->assertSee('75'); // 150 / 2
 
         $response->assertSee('Cost / Hour');
-        $response->assertSee('75'); // Value
-        $response->assertSee('kr.'); // Unit (might fail if space is weird)
+        $response->assertSee('38'); // 150 / 4 rounded
 
         $response->assertSee('Payer Breakdown');
         $response->assertSee('Weekly Habits');
         $response->assertSee('Vue Test'); // Cinema name
         $response->assertSee('Test Movie'); // Movie title
+        $response->assertSee('Upcoming Movie Night');
     }
 }

@@ -7,6 +7,7 @@ use App\Services\CalendarImportService;
 use App\Services\EventParser;
 use App\Services\TmdbService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Mockery;
 use Tests\TestCase;
@@ -54,13 +55,19 @@ class CalendarImportServiceTest extends TestCase
         $eventData->summary = 'Mock Movie at Mock Cinema';
         $eventData->location = 'Mock Cinema';
         $eventData->description = 'Description';
-        $eventData->startDateTime = now();
+        $eventData->startDateTime = now()->addDays(5);
         $eventData->attendees = [(object) ['email' => 'service@example.com']];
 
-        // When iterating, the service accesses properties.
-        // If the service uses magic getters on the real class, we need to ensure our mock or object supports them.
-        // The service accesses properties directly: $event->summary.
-        // stdClass supports this perfectly.
+        // 6. Mock HTTP for webhook
+        config(['app.discord_webhook_url' => 'http://discord.test']);
+        config(['app.slack_webhook_url' => 'http://slack.test']);
+        putenv('DISCORD_WEBHOOK_URL=http://discord.test');
+        putenv('SLACK_WEBHOOK_URL=http://slack.test');
+        
+        Http::fake([
+            'http://discord.test' => Http::response('ok', 200),
+            'http://slack.test' => Http::response('ok', 200),
+        ]);
 
         $eventMock->shouldReceive('get')
             ->andReturn(collect([$eventData]));
@@ -75,6 +82,16 @@ class CalendarImportServiceTest extends TestCase
 
         $service = new CalendarImportService($tmdbMock);
         $service->import();
+
+        Http::assertSent(function ($request) {
+            return $request->url() == 'http://discord.test' &&
+                   str_contains($request['content'], 'Mock Movie');
+        });
+
+        Http::assertSent(function ($request) {
+            return $request->url() == 'http://slack.test' &&
+                   str_contains($request['text'], 'Mock Movie');
+        });
 
         // 6. Assert Database persistence
         $this->assertDatabaseHas('showings', [

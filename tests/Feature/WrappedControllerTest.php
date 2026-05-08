@@ -33,7 +33,7 @@ class WrappedControllerTest extends TestCase
         $response = $this->get(route('wrapped', ['year' => now()->year]));
 
         $response->assertStatus(200);
-        $response->assertSee('Wrapped ' . now()->year);
+        $response->assertSee('Wrapped '.now()->year);
         $response->assertSee('Test Movie');
         $response->assertSee('150 kr.');
         $response->assertSee('Test Cinema');

@@ -18,17 +18,21 @@ Route::middleware('guest')->group(function () {
     Route::post('/auth/finish', [AuthController::class, 'finish'])->name('auth.finish');
 });
 
-use App\Livewire\ShowingsList;
+use App\Http\Controllers\ArchiveController;
+use App\Http\Controllers\BingoController;
+use App\Http\Controllers\EntityController;
 use App\Http\Controllers\WrappedController;
+use App\Livewire\ShowingsList;
+use App\Livewire\Watchlist;
 
 Route::middleware('auth')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/showings', ShowingsList::class)->name('showings');
-    Route::get('/watchlist', \App\Livewire\Watchlist::class)->name('watchlist');
+    Route::get('/watchlist', Watchlist::class)->name('watchlist');
     Route::get('/wrapped/{year?}', [WrappedController::class, 'show'])->name('wrapped');
-    
-    Route::get('/actor/{name}', [\App\Http\Controllers\EntityController::class, 'actor'])->name('actor');
-    Route::get('/genre/{name}', [\App\Http\Controllers\EntityController::class, 'genre'])->name('genre');
-    Route::get('/bingo', [\App\Http\Controllers\BingoController::class, 'index'])->name('bingo');
-    Route::get('/archive', [\App\Http\Controllers\ArchiveController::class, 'index'])->name('archive');
+
+    Route::get('/actor/{name}', [EntityController::class, 'actor'])->name('actor');
+    Route::get('/genre/{name}', [EntityController::class, 'genre'])->name('genre');
+    Route::get('/bingo', [BingoController::class, 'index'])->name('bingo');
+    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive');
 });

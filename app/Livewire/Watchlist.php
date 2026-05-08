@@ -10,12 +10,14 @@ use Livewire\Component;
 class Watchlist extends Component
 {
     public $searchQuery = '';
+
     public $searchResults = [];
 
     public function updatedSearchQuery()
     {
         if (strlen($this->searchQuery) < 3) {
             $this->searchResults = [];
+
             return;
         }
 
@@ -32,9 +34,9 @@ class Watchlist extends Component
         $movie = WatchlistMovie::firstOrCreate(
             ['tmdb_id' => $tmdbId],
             [
-                'title'         => $title,
-                'poster_path'   => $posterPath,
-                'release_date'  => $releaseDate,
+                'title' => $title,
+                'poster_path' => $posterPath,
+                'release_date' => $releaseDate,
                 'collection_id' => $collectionId,
             ]
         );
@@ -46,7 +48,7 @@ class Watchlist extends Component
 
         $userId = auth()->id();
 
-        if (!$movie->users()->where('user_id', $userId)->exists()) {
+        if (! $movie->users()->where('user_id', $userId)->exists()) {
             $movie->users()->attach($userId);
 
             if ($movie->users()->count() >= 2) {
@@ -77,7 +79,7 @@ class Watchlist extends Component
     {
         $discordWebhook = env('DISCORD_WEBHOOK_URL');
         $slackWebhook = env('SLACK_WEBHOOK_URL');
-        
+
         $message = "🍿 **MUTUAL HYPE ALERT!** Both Alex and Casper want to see **{$movie->title}**! Time to book tickets!";
 
         if ($discordWebhook) {

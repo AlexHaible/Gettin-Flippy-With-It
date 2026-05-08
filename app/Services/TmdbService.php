@@ -53,7 +53,9 @@ class TmdbService
 
     public function searchMovies(string $title): array
     {
-        if (! $this->apiKey) return [];
+        if (! $this->apiKey) {
+            return [];
+        }
 
         $response = Http::get("{$this->baseUrl}/search/movie", [
             'api_key' => $this->apiKey,
@@ -65,7 +67,9 @@ class TmdbService
 
     public function getNowPlaying(): array
     {
-        if (! $this->apiKey) return [];
+        if (! $this->apiKey) {
+            return [];
+        }
 
         $response = Http::get("{$this->baseUrl}/movie/now_playing", [
             'api_key' => $this->apiKey,
@@ -76,7 +80,9 @@ class TmdbService
 
     public function getUpcoming(): array
     {
-        if (! $this->apiKey) return [];
+        if (! $this->apiKey) {
+            return [];
+        }
 
         $response = Http::get("{$this->baseUrl}/movie/upcoming", [
             'api_key' => $this->apiKey,
@@ -87,7 +93,9 @@ class TmdbService
 
     public function getCollection(int $collectionId): ?array
     {
-        if (! $this->apiKey) return null;
+        if (! $this->apiKey) {
+            return null;
+        }
 
         $response = Http::get("{$this->baseUrl}/collection/{$collectionId}", [
             'api_key' => $this->apiKey,

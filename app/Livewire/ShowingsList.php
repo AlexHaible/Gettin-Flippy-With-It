@@ -2,13 +2,16 @@
 
 namespace App\Livewire;
 
+use App\Models\Rating;
 use App\Models\Showing;
 use Livewire\Component;
 
 class ShowingsList extends Component
 {
     public int $perPage = 15;
+
     public ?Showing $selectedShowing = null;
+
     public bool $showModal = false;
 
     public function loadMore()
@@ -30,9 +33,11 @@ class ShowingsList extends Component
 
     public function rateShowing(string $score)
     {
-        if (!$this->selectedShowing) return;
+        if (! $this->selectedShowing) {
+            return;
+        }
 
-        \App\Models\Rating::updateOrCreate(
+        Rating::updateOrCreate(
             ['showing_id' => $this->selectedShowing->id, 'user_id' => auth()->id()],
             ['score' => $score]
         );
@@ -46,7 +51,7 @@ class ShowingsList extends Component
         return view('livewire.showings-list', [
             'showings' => Showing::with(['movie', 'cinema', 'ratings.user'])
                 ->orderBy('start_time', 'desc')
-                ->paginate($this->perPage)
+                ->paginate($this->perPage),
         ])->layout('components.layouts.app');
     }
 }

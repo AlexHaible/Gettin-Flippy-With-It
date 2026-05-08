@@ -12,7 +12,7 @@ class EntityController extends Controller
             ->whereHas('movie', function ($query) use ($name) {
                 // Since cast is a JSON string of an array of strings, we can use LIKE
                 // Or SQLite JSON extraction if needed. LIKE is safe enough for exact name matches.
-                $query->where('cast', 'LIKE', '%"' . $name . '"%');
+                $query->where('cast', 'LIKE', '%"'.$name.'"%');
             })
             ->orderByDesc('start_time')
             ->get();
@@ -28,7 +28,7 @@ class EntityController extends Controller
     {
         $showings = Showing::with(['movie', 'cinema'])
             ->whereHas('movie', function ($query) use ($name) {
-                $query->where('genres', 'LIKE', '%"' . $name . '"%');
+                $query->where('genres', 'LIKE', '%"'.$name.'"%');
             })
             ->orderByDesc('start_time')
             ->get();

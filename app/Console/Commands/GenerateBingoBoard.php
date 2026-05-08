@@ -19,8 +19,9 @@ class GenerateBingoBoard extends Command
         $year = (int) ($this->argument('year') ?? now()->year);
 
         if (BingoGoal::where('year', $year)->exists()) {
-            if (!$this->option('force')) {
+            if (! $this->option('force')) {
                 $this->error("A bingo board for {$year} already exists. Use --force to regenerate.");
+
                 return;
             }
             BingoGoal::where('year', $year)->delete();
@@ -31,16 +32,16 @@ class GenerateBingoBoard extends Command
 
         foreach ($goals as $i => $goal) {
             BingoGoal::create([
-                'year'         => $year,
-                'position'     => $i + 1,
-                'type'         => $goal['type'],
+                'year' => $year,
+                'position' => $i + 1,
+                'type' => $goal['type'],
                 'target_value' => $goal['target_value'] ?? null,
-                'title'        => $goal['title'],
+                'title' => $goal['title'],
             ]);
         }
 
         $this->info("✅ Generated {$goals->count()} bingo goals for {$year}!");
-        $this->table(['Pos', 'Title', 'Type'], $goals->map(fn($g, $i) => [$i + 1, $g['title'], $g['type']]));
+        $this->table(['Pos', 'Title', 'Type'], $goals->map(fn ($g, $i) => [$i + 1, $g['title'], $g['type']]));
     }
 
     protected function buildGoals(): Collection
@@ -57,40 +58,40 @@ class GenerateBingoBoard extends Command
         // ── Genre goals (pull from movies we already know about) ──────────
         $knownGenres = Movie::whereNotNull('genres')
             ->get()
-            ->flatMap(fn($m) => json_decode($m->genres, true) ?? [])
+            ->flatMap(fn ($m) => json_decode($m->genres, true) ?? [])
             ->filter()
             ->countBy()
             ->sortDesc()
             ->keys()
             ->take(8);
 
-        $genreGoals = $knownGenres->map(fn($genre) => [
-            'type'         => 'genre',
+        $genreGoals = $knownGenres->map(fn ($genre) => [
+            'type' => 'genre',
             'target_value' => $genre,
-            'title'        => "See a {$genre} film",
+            'title' => "See a {$genre} film",
         ]);
 
         // ── Actor goals (top actors from your history) ─────────────────────
         $knownActors = Movie::whereNotNull('cast')
             ->get()
-            ->flatMap(fn($m) => json_decode($m->cast, true) ?? [])
+            ->flatMap(fn ($m) => json_decode($m->cast, true) ?? [])
             ->filter()
             ->countBy()
             ->sortDesc()
             ->keys()
             ->take(6);
 
-        $actorGoals = $knownActors->map(fn($actor) => [
-            'type'         => 'actor',
+        $actorGoals = $knownActors->map(fn ($actor) => [
+            'type' => 'actor',
             'target_value' => $actor,
-            'title'        => "See a film with {$actor}",
+            'title' => "See a film with {$actor}",
         ]);
 
         // ── Cinema goals (cinemas you visit) ─────────────────────────────
-        $cinemaGoals = Cinema::inRandomOrder()->take(4)->get()->map(fn($c) => [
-            'type'         => 'cinema',
+        $cinemaGoals = Cinema::inRandomOrder()->take(4)->get()->map(fn ($c) => [
+            'type' => 'cinema',
             'target_value' => $c->name,
-            'title'        => "Visit {$c->name}",
+            'title' => "Visit {$c->name}",
         ]);
 
         // ── Merge, shuffle, and trim to exactly 25 ────────────────────────

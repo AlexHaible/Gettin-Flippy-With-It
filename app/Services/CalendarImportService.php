@@ -143,7 +143,7 @@ class CalendarImportService
                 try {
                     $payerName = User::find($snackPayerId)?->username ?? 'Unknown';
                     $message = "🍿 *Popcorn Protocol*: New movie booked!\n";
-                    $message .= "*{$movie->title}* at {$cinema->name} on " . $showing->start_time->format('l, jS M Y H:i') . ".\n";
+                    $message .= "*{$movie->title}* at {$cinema->name} on ".$showing->start_time->format('l, jS M Y H:i').".\n";
                     $message .= "It's *{$payerName}*'s turn to buy snacks!";
 
                     $discordWebhook = env('DISCORD_WEBHOOK_URL');
@@ -156,7 +156,7 @@ class CalendarImportService
                         Http::post($slackWebhook, ['text' => $message]);
                     }
                 } catch (\Exception $e) {
-                    $this->log("Error dispatching webhooks: " . $e->getMessage());
+                    $this->log('Error dispatching webhooks: '.$e->getMessage());
                 }
             }
         }

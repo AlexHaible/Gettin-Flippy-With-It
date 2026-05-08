@@ -17,7 +17,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->enum('score', ['liked', 'meh', 'disliked']);
             $table->timestamps();
-            
+
             $table->unique(['showing_id', 'user_id']);
         });
     }

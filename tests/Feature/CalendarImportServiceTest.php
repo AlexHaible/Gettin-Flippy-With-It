@@ -63,7 +63,7 @@ class CalendarImportServiceTest extends TestCase
         config(['app.slack_webhook_url' => 'http://slack.test']);
         putenv('DISCORD_WEBHOOK_URL=http://discord.test');
         putenv('SLACK_WEBHOOK_URL=http://slack.test');
-        
+
         Http::fake([
             'http://discord.test' => Http::response('ok', 200),
             'http://slack.test' => Http::response('ok', 200),

@@ -14,7 +14,7 @@ class WrappedController extends Controller
         $availableYears = Showing::whereNotNull('start_time')
             ->get()
             ->pluck('start_time')
-            ->map(fn($date) => $date->year)
+            ->map(fn ($date) => $date->year)
             ->unique()
             ->sortDesc()
             ->values();
@@ -30,12 +30,12 @@ class WrappedController extends Controller
 
         $totalSpent = $showings->sum('price_total');
         $totalMovies = $showings->count();
-        $totalRuntime = $showings->sum(fn($s) => $s->movie->runtime ?? 0);
+        $totalRuntime = $showings->sum(fn ($s) => $s->movie->runtime ?? 0);
         $totalHours = $totalRuntime > 0 ? floor($totalRuntime / 60) : 0;
-        
-        $longestMovie = $showings->sortByDesc(fn($s) => $s->movie->runtime ?? 0)->first();
+
+        $longestMovie = $showings->sortByDesc(fn ($s) => $s->movie->runtime ?? 0)->first();
         $mostExpensive = $showings->sortByDesc('price_total')->first();
-        
+
         $topCinemaRaw = Showing::whereYear('start_time', $year)
             ->where('start_time', '<=', now())
             ->select('cinema_id', DB::raw('count(*) as total'))
@@ -48,9 +48,9 @@ class WrappedController extends Controller
         $casperSnacks = $showings->where('popcorn_payer_id', 2)->count();
 
         // Get a random backdrop from the year to serve as the hero background
-        $moviesWithBackdrop = $showings->filter(fn($s) => !empty($s->movie->backdrop_path));
-        $heroBackdrop = $moviesWithBackdrop->isNotEmpty() 
-            ? 'https://image.tmdb.org/t/p/original' . $moviesWithBackdrop->random()->movie->backdrop_path 
+        $moviesWithBackdrop = $showings->filter(fn ($s) => ! empty($s->movie->backdrop_path));
+        $heroBackdrop = $moviesWithBackdrop->isNotEmpty()
+            ? 'https://image.tmdb.org/t/p/original'.$moviesWithBackdrop->random()->movie->backdrop_path
             : null;
 
         $biggestDisagreement = null;
@@ -64,7 +64,7 @@ class WrappedController extends Controller
             if ($alexRating && $casperRating) {
                 $alexScore = $scoreMap[$alexRating->score] ?? 2;
                 $casperScore = $scoreMap[$casperRating->score] ?? 2;
-                
+
                 $diff = abs($alexScore - $casperScore);
                 if ($diff > $maxDiff && $diff > 0) {
                     $maxDiff = $diff;

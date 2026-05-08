@@ -15,21 +15,21 @@ class BingoService
         $year = $showing->start_time->year;
         $goals = BingoGoal::where('year', $year)->where('is_completed', false)->get();
 
-        $movie   = $showing->movie;
+        $movie = $showing->movie;
         $ratings = $showing->ratings;
-        $genres  = json_decode($movie->genres ?? '[]', true) ?? [];
-        $cast    = json_decode($movie->cast ?? '[]', true) ?? [];
+        $genres = json_decode($movie->genres ?? '[]', true) ?? [];
+        $cast = json_decode($movie->cast ?? '[]', true) ?? [];
 
         foreach ($goals as $goal) {
             $completed = match ($goal->type) {
-                'genre'          => in_array($goal->target_value, $genres),
-                'actor'          => in_array($goal->target_value, $cast),
-                'cinema'         => $showing->cinema?->name === $goal->target_value,
-                'runtime'        => ($movie->runtime ?? 0) >= (int) $goal->target_value,
-                'mutual_liked'   => $ratings->where('score', 'liked')->count() >= 2,
-                'mutual_disliked'=> $ratings->where('score', 'disliked')->count() >= 2,
-                'free_square'    => true,
-                default          => false,
+                'genre' => in_array($goal->target_value, $genres),
+                'actor' => in_array($goal->target_value, $cast),
+                'cinema' => $showing->cinema?->name === $goal->target_value,
+                'runtime' => ($movie->runtime ?? 0) >= (int) $goal->target_value,
+                'mutual_liked' => $ratings->where('score', 'liked')->count() >= 2,
+                'mutual_disliked' => $ratings->where('score', 'disliked')->count() >= 2,
+                'free_square' => true,
+                default => false,
             };
 
             if ($completed) {

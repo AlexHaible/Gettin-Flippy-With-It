@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Services\BingoService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Showing extends Model
 {
@@ -38,7 +40,7 @@ class Showing extends Model
         return $this->belongsTo(User::class, 'soda_payer_id');
     }
 
-    public function ratings(): \Illuminate\Database\Eloquent\Relations\HasMany
+    public function ratings(): HasMany
     {
         return $this->hasMany(Rating::class);
     }
@@ -48,7 +50,7 @@ class Showing extends Model
         static::saved(function (Showing $showing) {
             // Reload fresh relations so BingoService always has up-to-date data
             $showing->load(['movie', 'cinema', 'ratings']);
-            app(\App\Services\BingoService::class)->evaluate($showing);
+            app(BingoService::class)->evaluate($showing);
         });
     }
 }

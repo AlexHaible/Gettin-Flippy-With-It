@@ -90,19 +90,21 @@ class DashboardController extends Controller
         // 11. Dynamic Backdrop
         $heroBackdrop = null;
         if ($upcomingShowings->isNotEmpty() && $upcomingShowings->first()->movie->backdrop_path) {
-            $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $upcomingShowings->first()->movie->backdrop_path;
+            $heroBackdrop = 'https://image.tmdb.org/t/p/original'.$upcomingShowings->first()->movie->backdrop_path;
         } elseif ($recentShowings->isNotEmpty() && $recentShowings->first()->movie->backdrop_path) {
-            $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $recentShowings->first()->movie->backdrop_path;
+            $heroBackdrop = 'https://image.tmdb.org/t/p/original'.$recentShowings->first()->movie->backdrop_path;
         }
 
         // 12. Most Watched Actor & Top Genre
         $allMovies = Movie::withCount('showings')->get();
-        
+
         $genreCounts = [];
         $actorCounts = [];
 
         foreach ($allMovies as $movie) {
-            if ($movie->showings_count == 0) continue;
+            if ($movie->showings_count == 0) {
+                continue;
+            }
 
             $genres = json_decode($movie->genres, true) ?? [];
             foreach ($genres as $genre) {
@@ -125,7 +127,7 @@ class DashboardController extends Controller
         $daysPassed = now()->dayOfYear;
         $totalDays = now()->isLeapYear() ? 366 : 365;
         $paceMultiplier = $daysPassed > 0 ? $totalDays / $daysPassed : 1;
-        
+
         $currentYearShowings = Showing::whereYear('start_time', now()->year)->get();
         $currentYearMoviesCount = $currentYearShowings->count();
         $currentYearSpendCount = $currentYearShowings->sum('price_total');
@@ -134,7 +136,7 @@ class DashboardController extends Controller
         $projectedSpend = round($currentYearSpendCount * $paceMultiplier);
 
         // 14. Recommendations (You Should See)
-        $tmdbService = app(\App\Services\TmdbService::class);
+        $tmdbService = app(TmdbService::class);
         $nowPlaying = collect($tmdbService->getNowPlaying());
         $upcoming = collect($tmdbService->getUpcoming());
 
@@ -143,20 +145,20 @@ class DashboardController extends Controller
         $pool = $nowPlaying
             ->merge($upcoming)
             ->unique('id')
-            ->reject(fn($m) => $seenTmdbIds->has($m['id']))
+            ->reject(fn ($m) => $seenTmdbIds->has($m['id']))
             ->shuffle();
 
         $genreMap = [
             'Action' => 28, 'Adventure' => 12, 'Animation' => 16, 'Comedy' => 35, 'Crime' => 80,
             'Documentary' => 99, 'Drama' => 18, 'Family' => 10751, 'Fantasy' => 14, 'History' => 36,
             'Horror' => 27, 'Music' => 10402, 'Mystery' => 9648, 'Romance' => 10749,
-            'Science Fiction' => 878, 'TV Movie' => 10770, 'Thriller' => 53, 'War' => 10752, 'Western' => 37
+            'Science Fiction' => 878, 'TV Movie' => 10770, 'Thriller' => 53, 'War' => 10752, 'Western' => 37,
         ];
 
         $topGenreId = $genreMap[$topGenre] ?? null;
 
         if ($topGenreId) {
-            $recommendations = $pool->filter(fn($movie) => in_array($topGenreId, $movie['genre_ids'] ?? []))->take(4);
+            $recommendations = $pool->filter(fn ($movie) => in_array($topGenreId, $movie['genre_ids'] ?? []))->take(4);
 
             // Pad with unseen randoms if not enough genre matches
             if ($recommendations->count() < 4) {
@@ -174,21 +176,23 @@ class DashboardController extends Controller
 
         foreach ($watchlistWithCollections as $watchlistMovie) {
             $collection = app(TmdbService::class)->getCollection($watchlistMovie->collection_id);
-            if (!$collection) continue;
+            if (! $collection) {
+                continue;
+            }
 
             $parts = collect($collection['parts'] ?? [])
                 ->sortBy('release_date')
                 ->values();
 
-            $targetIndex = $parts->search(fn($p) => $p['id'] === $watchlistMovie->tmdb_id);
+            $targetIndex = $parts->search(fn ($p) => $p['id'] === $watchlistMovie->tmdb_id);
 
             if ($targetIndex !== false && $targetIndex > 0) {
                 $prev = $parts[$targetIndex - 1];
                 $rewatchRadar = [
                     'watchlist_title' => $watchlistMovie->title,
-                    'prev_title'      => $prev['title'],
-                    'prev_poster'     => $prev['poster_path'] ?? null,
-                    'prev_year'       => isset($prev['release_date']) ? substr($prev['release_date'], 0, 4) : null,
+                    'prev_title' => $prev['title'],
+                    'prev_poster' => $prev['poster_path'] ?? null,
+                    'prev_year' => isset($prev['release_date']) ? substr($prev['release_date'], 0, 4) : null,
                     'collection_name' => $collection['name'],
                 ];
                 break;
@@ -212,10 +216,10 @@ class DashboardController extends Controller
             'topActor' => $topActor,
             'topGenreCount' => $genreCounts[$topGenre] ?? 0,
             'topActorCount' => $actorCounts[$topActor] ?? 0,
-            'projectedMovies'  => $projectedMovies,
-            'projectedSpend'   => $projectedSpend,
-            'recommendations'  => $recommendations,
-            'rewatchRadar'     => $rewatchRadar,
+            'projectedMovies' => $projectedMovies,
+            'projectedSpend' => $projectedSpend,
+            'recommendations' => $recommendations,
+            'rewatchRadar' => $rewatchRadar,
         ]);
     }
 }

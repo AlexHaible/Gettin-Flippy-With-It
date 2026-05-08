@@ -10,28 +10,35 @@ class ShowingsList extends Component
 {
     public int $perPage = 15;
 
+    public string $viewMode = 'list'; // 'list' | 'grid'
+
     public ?Showing $selectedShowing = null;
 
     public bool $showModal = false;
 
-    public function loadMore()
+    public function loadMore(): void
     {
         $this->perPage += 15;
     }
 
-    public function openModal(int $showingId)
+    public function setView(string $mode): void
+    {
+        $this->viewMode = $mode;
+    }
+
+    public function openModal(int $showingId): void
     {
         $this->selectedShowing = Showing::with(['movie', 'cinema', 'ratings.user'])->find($showingId);
         $this->showModal = true;
     }
 
-    public function closeModal()
+    public function closeModal(): void
     {
         $this->showModal = false;
         $this->selectedShowing = null;
     }
 
-    public function rateShowing(string $score)
+    public function rateShowing(string $score): void
     {
         if (! $this->selectedShowing) {
             return;
@@ -48,10 +55,13 @@ class ShowingsList extends Component
 
     public function render()
     {
-        return view('livewire.showings-list', [
-            'showings' => Showing::with(['movie', 'cinema', 'ratings.user'])
-                ->orderBy('start_time', 'desc')
-                ->paginate($this->perPage),
-        ])->layout('components.layouts.app');
+        // Grid mode loads everything at once for grouping by year;
+        // list mode uses cursor-based pagination for infinite scroll.
+        $showings = $this->viewMode === 'grid'
+            ? Showing::with(['movie', 'cinema', 'ratings'])->orderByDesc('start_time')->get()
+            : Showing::with(['movie', 'cinema', 'ratings.user'])->orderByDesc('start_time')->paginate($this->perPage);
+
+        return view('livewire.showings-list', compact('showings'))
+            ->layout('components.layouts.app');
     }
 }

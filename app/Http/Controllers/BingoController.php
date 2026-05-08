@@ -18,4 +18,14 @@ class BingoController extends Controller
 
         return view('bingo', compact('goals', 'year', 'hasBoard'));
     }
+
+    public function toggle(BingoGoal $goal)
+    {
+        // Never allow toggling off the free square
+        if ($goal->type !== 'free_square') {
+            $goal->update(['is_completed' => ! $goal->is_completed]);
+        }
+
+        return back();
+    }
 }

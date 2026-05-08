@@ -32,11 +32,13 @@ class GenerateBingoBoard extends Command
 
         foreach ($goals as $i => $goal) {
             BingoGoal::create([
-                'year' => $year,
-                'position' => $i + 1,
-                'type' => $goal['type'],
+                'year'         => $year,
+                'position'     => $i + 1,
+                'type'         => $goal['type'],
                 'target_value' => $goal['target_value'] ?? null,
-                'title' => $goal['title'],
+                'title'        => $goal['title'],
+                // Free square is always pre-completed
+                'is_completed' => $goal['type'] === 'free_square',
             ]);
         }
 
@@ -51,7 +53,6 @@ class GenerateBingoBoard extends Command
             ['type' => 'runtime',         'target_value' => '180', 'title' => 'Epic Marathon (3+ hours)'],
             ['type' => 'mutual_liked',    'target_value' => null,  'title' => 'Unanimous Masterpiece'],
             ['type' => 'mutual_disliked', 'target_value' => null,  'title' => 'Mutual Regret'],
-            ['type' => 'free_square',     'target_value' => null,  'title' => '🍿 FREE SQUARE 🍿'],
             ['type' => 'runtime',         'target_value' => '150', 'title' => 'Long Night (2.5+ hours)'],
         ]);
 
@@ -94,7 +95,7 @@ class GenerateBingoBoard extends Command
             'title' => "Visit {$c->name}",
         ]);
 
-        // ── Merge, shuffle, and trim to exactly 25 ────────────────────────
+        // ── Merge, shuffle, and trim to exactly 24 (position 13 is reserved) ─
         $all = $static
             ->merge($genreGoals)
             ->merge($actorGoals)
@@ -102,12 +103,20 @@ class GenerateBingoBoard extends Command
             ->shuffle()
             ->values();
 
-        // If we somehow have fewer than 25, pad with extra genre goals
-        while ($all->count() < 25) {
+        // Pad to 24 if short
+        while ($all->count() < 24) {
             $extra = $knownGenres->random();
             $all->push(['type' => 'genre', 'target_value' => $extra, 'title' => "See another {$extra} film"]);
         }
 
-        return $all->take(25)->values();
+        // Splice the FREE SQUARE into the exact center (index 12 = position 13)
+        $first24 = $all->take(24)->values();
+        $freeSquare = ['type' => 'free_square', 'target_value' => null, 'title' => '🍿 FREE SQUARE 🍿'];
+        $result = $first24->slice(0, 12)
+            ->push($freeSquare)
+            ->merge($first24->slice(12))
+            ->values();
+
+        return $result;
     }
 }

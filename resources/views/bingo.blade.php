@@ -42,15 +42,24 @@
         <div class="grid grid-cols-5 gap-2">
             @foreach($goals as $goal)
                 @php
-                    $done      = $goal->is_completed;
-                    $poster    = $done && $goal->showing?->movie?->poster_path
+                    $done       = $goal->is_completed;
+                    $freeSquare = $goal->type === 'free_square';
+                    $poster     = $done && $goal->showing?->movie?->poster_path
                                     ? 'https://image.tmdb.org/t/p/w200' . $goal->showing->movie->poster_path
                                     : null;
-                    $freeSquare = $goal->type === 'free_square';
                 @endphp
-                <div class="relative aspect-square rounded-lg border-2 overflow-hidden flex items-center justify-center text-center p-2 transition-all duration-300
-                    {{ $done ? 'border-gold-500 shadow-[0_0_12px_rgba(212,175,55,0.5)]' : 'border-gold-900/40 bg-noir-900/90' }}
-                    {{ $freeSquare ? 'border-gold-600 bg-gold-950/30' : '' }}">
+
+                @if(!$freeSquare)
+                <form method="POST" action="{{ route('bingo.toggle', $goal) }}" class="contents">
+                    @csrf
+                @endif
+
+                <button
+                    type="{{ $freeSquare ? 'button' : 'submit' }}"
+                    title="{{ $freeSquare ? 'Free Square!' : ($done ? 'Click to unmark' : 'Click to mark as completed') }}"
+                    class="relative aspect-square rounded-lg border-2 overflow-hidden flex items-center justify-center text-center p-2 transition-all duration-300 w-full
+                        {{ $done ? 'border-gold-500 shadow-[0_0_12px_rgba(212,175,55,0.5)]' : 'border-gold-900/40 bg-noir-900/90 hover:border-gold-700 hover:bg-noir-800' }}
+                        {{ $freeSquare ? 'border-gold-600 bg-gold-950/30 cursor-default' : 'cursor-pointer' }}">
 
                     {{-- Poster backdrop when completed --}}
                     @if($poster)
@@ -79,7 +88,11 @@
                             </p>
                         @endif
                     </div>
-                </div>
+                </button>
+
+                @if(!$freeSquare)
+                </form>
+                @endif
             @endforeach
         </div>
     @endif

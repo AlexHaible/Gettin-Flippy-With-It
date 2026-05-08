@@ -42,8 +42,6 @@
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Dashboard</a>
             <a href="{{ route('watchlist') }}"
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Watchlist</a>
-            <a href="{{ route('archive') }}"
-                class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Stub Book</a>
             <a href="{{ route('bingo') }}"
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">The Gauntlet</a>
             <a href="{{ route('logout') }}"

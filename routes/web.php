@@ -33,6 +33,7 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/actor/{name}', [EntityController::class, 'actor'])->name('actor');
     Route::get('/genre/{name}', [EntityController::class, 'genre'])->name('genre');
-    Route::get('/bingo', [BingoController::class, 'index'])->name('bingo');
-    Route::get('/archive', [ArchiveController::class, 'index'])->name('archive');
+    Route::get('/bingo', [\App\Http\Controllers\BingoController::class, 'index'])->name('bingo');
+    Route::post('/bingo/{goal}/toggle', [\App\Http\Controllers\BingoController::class, 'toggle'])->name('bingo.toggle');
+    Route::get('/archive', fn() => redirect()->route('showings'))->name('archive');
 });

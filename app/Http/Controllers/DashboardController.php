@@ -137,7 +137,14 @@ class DashboardController extends Controller
         $tmdbService = app(\App\Services\TmdbService::class);
         $nowPlaying = collect($tmdbService->getNowPlaying());
         $upcoming = collect($tmdbService->getUpcoming());
-        $pool = $nowPlaying->merge($upcoming)->unique('id')->shuffle();
+
+        // Exclude movies already in our database (i.e. already seen)
+        $seenTmdbIds = Movie::whereNotNull('tmdb_id')->pluck('tmdb_id')->flip();
+        $pool = $nowPlaying
+            ->merge($upcoming)
+            ->unique('id')
+            ->reject(fn($m) => $seenTmdbIds->has($m['id']))
+            ->shuffle();
 
         $genreMap = [
             'Action' => 28, 'Adventure' => 12, 'Animation' => 16, 'Comedy' => 35, 'Crime' => 80,
@@ -145,17 +152,17 @@ class DashboardController extends Controller
             'Horror' => 27, 'Music' => 10402, 'Mystery' => 9648, 'Romance' => 10749,
             'Science Fiction' => 878, 'TV Movie' => 10770, 'Thriller' => 53, 'War' => 10752, 'Western' => 37
         ];
-        
+
         $topGenreId = $genreMap[$topGenre] ?? null;
 
         if ($topGenreId) {
-            $recommendations = $pool->filter(function($movie) use ($topGenreId) {
-                return in_array($topGenreId, $movie['genre_ids'] ?? []);
-            })->take(4);
-            
-            // Pad with random if not enough matches
+            $recommendations = $pool->filter(fn($movie) => in_array($topGenreId, $movie['genre_ids'] ?? []))->take(4);
+
+            // Pad with unseen randoms if not enough genre matches
             if ($recommendations->count() < 4) {
-                $recommendations = $recommendations->merge($pool->whereNotIn('id', $recommendations->pluck('id'))->take(4 - $recommendations->count()));
+                $recommendations = $recommendations->merge(
+                    $pool->whereNotIn('id', $recommendations->pluck('id'))->take(4 - $recommendations->count())
+                );
             }
         } else {
             $recommendations = $pool->take(4);

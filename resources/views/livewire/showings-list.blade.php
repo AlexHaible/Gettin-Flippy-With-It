@@ -66,8 +66,8 @@
                 });
             }
          }">
-        <div class="bg-noir-900 border-2 deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-6 relative" @click.away="$wire.closeModal()">
-            <button wire:click="closeModal" class="absolute top-4 right-4 text-gold-500 hover:text-white">
+        <div class="bg-noir-900 border-2 deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto" @click.away="$wire.closeModal()">
+            <button wire:click="closeModal" class="sticky top-0 left-full block ml-auto z-50 text-gold-500 hover:text-white -mt-2 -mr-2 mb-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             

@@ -1,0 +1,88 @@
+<?php
+
+namespace App\Livewire;
+
+use App\Models\WatchlistMovie;
+use App\Services\TmdbService;
+use Illuminate\Support\Facades\Http;
+use Livewire\Component;
+
+class Watchlist extends Component
+{
+    public $searchQuery = '';
+    public $searchResults = [];
+
+    public function updatedSearchQuery()
+    {
+        if (strlen($this->searchQuery) < 3) {
+            $this->searchResults = [];
+            return;
+        }
+
+        $tmdbService = app(TmdbService::class);
+        $this->searchResults = collect($tmdbService->searchMovies($this->searchQuery))->take(5)->toArray();
+    }
+
+    public function addMovie($tmdbId, $title, $posterPath, $releaseDate)
+    {
+        $movie = WatchlistMovie::firstOrCreate(
+            ['tmdb_id' => $tmdbId],
+            [
+                'title' => $title,
+                'poster_path' => $posterPath,
+                'release_date' => $releaseDate,
+            ]
+        );
+
+        $userId = auth()->id();
+
+        if (!$movie->users()->where('user_id', $userId)->exists()) {
+            $movie->users()->attach($userId);
+            
+            // Check for Mutual Hype
+            if ($movie->users()->count() >= 2) {
+                $this->dispatchMutualHypeWebhook($movie);
+            }
+        }
+
+        $this->searchQuery = '';
+        $this->searchResults = [];
+    }
+
+    public function toggleHype($movieId)
+    {
+        $movie = WatchlistMovie::find($movieId);
+        $userId = auth()->id();
+
+        if ($movie->users()->where('user_id', $userId)->exists()) {
+            $movie->users()->detach($userId);
+        } else {
+            $movie->users()->attach($userId);
+            if ($movie->users()->count() >= 2) {
+                $this->dispatchMutualHypeWebhook($movie);
+            }
+        }
+    }
+
+    protected function dispatchMutualHypeWebhook($movie)
+    {
+        $discordWebhook = env('DISCORD_WEBHOOK_URL');
+        $slackWebhook = env('SLACK_WEBHOOK_URL');
+        
+        $message = "🍿 **MUTUAL HYPE ALERT!** Both Alex and Casper want to see **{$movie->title}**! Time to book tickets!";
+
+        if ($discordWebhook) {
+            Http::post($discordWebhook, ['content' => $message]);
+        }
+        if ($slackWebhook) {
+            Http::post($slackWebhook, ['text' => $message]);
+        }
+    }
+
+    public function render()
+    {
+        return view('livewire.watchlist', [
+            'watchlistMovies' => WatchlistMovie::with('users')->orderByDesc('created_at')->get(),
+        ])->layout('components.layouts.app');
+    }
+}

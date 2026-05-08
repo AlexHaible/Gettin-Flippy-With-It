@@ -37,6 +37,11 @@ class User extends Authenticatable implements HasPasskeys
         return $this->hasMany(Rating::class);
     }
 
+    public function watchlistMovies()
+    {
+        return $this->belongsToMany(WatchlistMovie::class)->withTimestamps();
+    }
+
     #[Override]
     public function getPasskeyName(): string
     {

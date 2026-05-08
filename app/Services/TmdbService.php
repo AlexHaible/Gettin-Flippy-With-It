@@ -50,4 +50,38 @@ class TmdbService
 
         return null;
     }
+
+    public function searchMovies(string $title): array
+    {
+        if (! $this->apiKey) return [];
+
+        $response = Http::get("{$this->baseUrl}/search/movie", [
+            'api_key' => $this->apiKey,
+            'query' => $title,
+        ]);
+
+        return $response->successful() ? $response->json('results', []) : [];
+    }
+
+    public function getNowPlaying(): array
+    {
+        if (! $this->apiKey) return [];
+
+        $response = Http::get("{$this->baseUrl}/movie/now_playing", [
+            'api_key' => $this->apiKey,
+        ]);
+
+        return $response->successful() ? $response->json('results', []) : [];
+    }
+
+    public function getUpcoming(): array
+    {
+        if (! $this->apiKey) return [];
+
+        $response = Http::get("{$this->baseUrl}/movie/upcoming", [
+            'api_key' => $this->apiKey,
+        ]);
+
+        return $response->successful() ? $response->json('results', []) : [];
+    }
 }

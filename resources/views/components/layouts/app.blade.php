@@ -40,6 +40,8 @@
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Index</a>
             <a href="{{ route('dashboard') }}"
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Dashboard</a>
+            <a href="{{ route('watchlist') }}"
+                class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Watchlist</a>
             <a href="{{ route('logout') }}"
                 class="deco-text-metallic text-gold-500 hover:text-gold-300 font-semibold mx-2">Logout</a>
             @else

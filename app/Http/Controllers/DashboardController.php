@@ -119,6 +119,46 @@ class DashboardController extends Controller
         $topGenre = key($genreCounts) ?? 'N/A';
         $topActor = key($actorCounts) ?? 'N/A';
 
+        // 13. The Pace Projections
+        $daysPassed = now()->dayOfYear;
+        $totalDays = now()->isLeapYear() ? 366 : 365;
+        $paceMultiplier = $daysPassed > 0 ? $totalDays / $daysPassed : 1;
+        
+        $currentYearShowings = Showing::whereYear('start_time', now()->year)->get();
+        $currentYearMoviesCount = $currentYearShowings->count();
+        $currentYearSpendCount = $currentYearShowings->sum('price_total');
+
+        $projectedMovies = round($currentYearMoviesCount * $paceMultiplier);
+        $projectedSpend = round($currentYearSpendCount * $paceMultiplier);
+
+        // 14. Recommendations (You Should See)
+        $tmdbService = app(\App\Services\TmdbService::class);
+        $nowPlaying = collect($tmdbService->getNowPlaying());
+        $upcoming = collect($tmdbService->getUpcoming());
+        $pool = $nowPlaying->merge($upcoming)->unique('id')->shuffle();
+
+        $genreMap = [
+            'Action' => 28, 'Adventure' => 12, 'Animation' => 16, 'Comedy' => 35, 'Crime' => 80,
+            'Documentary' => 99, 'Drama' => 18, 'Family' => 10751, 'Fantasy' => 14, 'History' => 36,
+            'Horror' => 27, 'Music' => 10402, 'Mystery' => 9648, 'Romance' => 10749,
+            'Science Fiction' => 878, 'TV Movie' => 10770, 'Thriller' => 53, 'War' => 10752, 'Western' => 37
+        ];
+        
+        $topGenreId = $genreMap[$topGenre] ?? null;
+
+        if ($topGenreId) {
+            $recommendations = $pool->filter(function($movie) use ($topGenreId) {
+                return in_array($topGenreId, $movie['genre_ids'] ?? []);
+            })->take(4);
+            
+            // Pad with random if not enough matches
+            if ($recommendations->count() < 4) {
+                $recommendations = $recommendations->merge($pool->whereNotIn('id', $recommendations->pluck('id'))->take(4 - $recommendations->count()));
+            }
+        } else {
+            $recommendations = $pool->take(4);
+        }
+
         return view('dashboard', [
             'totalShowings' => $totalShowings,
             'totalMovies' => $totalMovies,
@@ -136,6 +176,9 @@ class DashboardController extends Controller
             'topActor' => $topActor,
             'topGenreCount' => $genreCounts[$topGenre] ?? 0,
             'topActorCount' => $actorCounts[$topActor] ?? 0,
+            'projectedMovies' => $projectedMovies,
+            'projectedSpend' => $projectedSpend,
+            'recommendations' => $recommendations,
         ]);
     }
 }

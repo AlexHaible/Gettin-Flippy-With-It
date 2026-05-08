@@ -114,16 +114,27 @@
 
             <!-- Top Genre -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
-                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Top Genre</h3>
-                <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topGenre }}">{{ $topGenre }}</p>
-                <p class="text-gold-700 text-xs mt-1">{{ $topGenreCount }} movies</p>
+                <a href="{{ route('genre', ['name' => $topGenre]) }}" class="block hover:opacity-80 transition">
+                    <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2 hover:text-gold-400">Top Genre</h3>
+                    <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topGenre }}">{{ $topGenre }}</p>
+                    <p class="text-gold-700 text-xs mt-1">{{ $topGenreCount }} movies</p>
+                </a>
             </div>
 
             <!-- Top Actor -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
-                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">Top Actor</h3>
-                <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topActor }}">{{ $topActor }}</p>
-                <p class="text-gold-700 text-xs mt-1">{{ $topActorCount }} movies</p>
+                <a href="{{ route('actor', ['name' => $topActor]) }}" class="block hover:opacity-80 transition">
+                    <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2 hover:text-gold-400">Top Actor</h3>
+                    <p class="text-xl font-bold font-display text-gold-500 truncate" title="{{ $topActor }}">{{ $topActor }}</p>
+                    <p class="text-gold-700 text-xs mt-1">{{ $topActorCount }} movies</p>
+                </a>
+            </div>
+
+            <!-- The Pace -->
+            <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
+                <h3 class="text-gold-600 text-sm font-uppercase tracking-widest mb-2">The Pace (Projection)</h3>
+                <p class="text-xl font-bold font-display text-gold-500 truncate">{{ $projectedMovies }} movies</p>
+                <p class="text-gold-700 text-xs mt-1">{{ number_format($projectedSpend, 0, ',', '.') }} kr. by EOY</p>
             </div>
         </div>
 
@@ -181,7 +192,7 @@
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Recent Showings -->
             <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20">
-                <a href="{{ route('showings.index') }}" class="group flex items-center justify-between mb-4">
+                <a href="{{ route('showings') }}" class="group flex items-center justify-between mb-4">
                     <h2 class="text-xl font-bold font-display text-gold-500 tracking-wider group-hover:text-gold-300 transition-colors">Recent Showings</h2>
                     <span class="text-gold-600 group-hover:text-gold-400 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -231,6 +242,28 @@
                     @endforeach
                 </div>
             </div>
+            </div>
         </div>
+        
+        <!-- Recommendations -->
+        @if($recommendations->isNotEmpty())
+        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20 mb-8">
+            <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider">In Theaters: You Should See</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                @foreach($recommendations as $movie)
+                <div class="relative group overflow-hidden rounded border border-gold-900/50">
+                    @if(!empty($movie['poster_path']))
+                        <img src="https://image.tmdb.org/t/p/w300{{ $movie['poster_path'] }}" class="w-full h-auto object-cover transition duration-300 group-hover:scale-105">
+                    @else
+                        <div class="w-full h-48 bg-noir-950 flex items-center justify-center text-gold-800 text-xs text-center p-2">{{ $movie['title'] }}</div>
+                    @endif
+                    <div class="absolute inset-0 bg-gradient-to-t from-noir-950 via-noir-950/50 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3">
+                        <span class="text-gold-100 font-bold text-sm leading-tight drop-shadow-md">{{ $movie['title'] }}</span>
+                    </div>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
     </div>
 </x-layouts.app>

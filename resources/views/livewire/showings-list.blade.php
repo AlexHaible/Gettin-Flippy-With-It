@@ -140,133 +140,88 @@
          RATING / TICKET MODAL (shared by both views)
     ══════════════════════════════════════════════ --}}
     @if($showModal && $selectedShowing)
-    <div class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-md"
-         x-init="document.body.style.overflow = 'hidden'; return () => document.body.style.overflow = 'auto'"
+    <div class="fixed inset-0 z-[500] flex items-center justify-center p-2 sm:p-4 bg-black/90"
          x-data="{
             downloadTicket() {
                 const ticketEl = document.getElementById('ticket-card');
-                
-                html2canvas(ticketEl, { 
-                    backgroundColor: '#050505', 
-                    scale: 2,
-                    useCORS: true,
-                    logging: false,
+                html2canvas(ticketEl, {
+                    backgroundColor: '#050505', scale: 2, useCORS: true, logging: false,
                     onclone: (clonedDoc) => {
                         const el = clonedDoc.getElementById('ticket-card');
-                        
-                        // AGGRESSIVE CLEANUP: Remove all modern CSS that breaks html2canvas
-                        const cleanElement = (node) => {
-                            const computed = window.getComputedStyle(node);
-                            
-                            // 1. Convert colors to hex/rgb if they are modern
-                            if (computed.color.includes('okl')) node.style.color = '#F9F1D8';
-                            if (computed.backgroundColor.includes('okl')) node.style.backgroundColor = '#050505';
-                            if (computed.borderColor.includes('okl')) node.style.borderColor = '#2B230B';
-                            
-                            // 2. Kill modern properties that often use modern colors internally
-                            node.style.borderImage = 'none';
-                            node.style.textShadow = 'none';
-                            node.style.boxShadow = 'none';
-                            node.style.backdropFilter = 'none';
-                            
-                            // 3. Remove background gradients that might use oklch
-                            if (computed.backgroundImage.includes('gradient')) {
-                                node.style.backgroundImage = 'none';
-                            }
-                            
-                            // Recurse
-                            Array.from(node.children).forEach(cleanElement);
+                        const clean = (node) => {
+                            const s = window.getComputedStyle(node);
+                            if (s.color.includes('okl')) node.style.color = '#F9F1D8';
+                            if (s.backgroundColor.includes('okl')) node.style.backgroundColor = '#050505';
+                            if (s.borderColor.includes('okl')) node.style.borderColor = '#2B230B';
+                            node.style.borderImage = 'none'; node.style.textShadow = 'none';
+                            node.style.boxShadow = 'none'; node.style.backdropFilter = 'none';
+                            if (s.backgroundImage.includes('gradient')) node.style.backgroundImage = 'none';
+                            Array.from(node.children).forEach(clean);
                         };
-
-                        cleanElement(el);
-                        
-                        // Force solid background for the card
-                        el.style.background = '#050505';
-                        el.style.border = '1px solid #2B230B';
+                        clean(el);
+                        el.style.background = '#050505'; el.style.border = '1px solid #2B230B';
                     }
                 }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = 'ticket-{{ \Illuminate\Support\Str::slug($selectedShowing->movie->title) }}.png';
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                }).catch(err => {
-                    console.error('Capture failed:', err);
-                });
+                    link.href = canvas.toDataURL('image/png'); link.click();
+                }).catch(err => console.error('Capture failed:', err));
             }
-         }">
-        <div class="bg-noir-900 border-2 deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-4 sm:p-6 relative max-h-[95vh] overflow-y-auto" @click.away="$wire.closeModal()">
-            <button wire:click="closeModal" class="sticky top-0 left-full block ml-auto z-[70] text-gold-500 hover:text-white -mt-2 -mr-2 mb-2 p-2">
+         }"
+         x-init="document.body.style.overflow='hidden'; return () => document.body.style.overflow='';">
+        <div class="bg-noir-900 border deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-4 sm:p-6 relative max-h-[90vh] overflow-y-auto"
+             @click.outside="$wire.closeModal()">
+            <button wire:click="closeModal" class="absolute top-3 right-3 text-gold-500 hover:text-white p-1 z-10">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
-            {{-- We use explicit Hex/RGB here to ensure html2canvas doesn't trip on oklab/oklch --}}
-            <div id="ticket-card" style="background-color: #050505; border: 1px solid #2B230B;" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded relative overflow-hidden">
+            <div id="ticket-card" style="background-color:#050505;border:1px solid #2B230B;" class="flex flex-col md:flex-row gap-4 p-4 sm:p-6 rounded relative overflow-hidden">
                 @if($selectedShowing->movie->poster_path)
-                    <div class="flex justify-center md:block">
-                        <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" 
-                             crossorigin="anonymous"
-                             class="w-28 sm:w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
+                    <div class="flex justify-center md:block shrink-0">
+                        <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" crossorigin="anonymous" class="w-28 sm:w-32 md:w-40 rounded shadow-lg z-10 relative">
                     </div>
                 @endif
-                <div class="z-10 relative flex-1 flex flex-col justify-between">
+                <div class="z-10 relative flex-1 flex flex-col justify-between min-w-0">
                     <div>
-                        <p style="color: #806921;" class="text-[10px] sm:text-xs uppercase tracking-widest mb-1 font-bold text-center md:text-left">Admit Two</p>
-                        <h2 style="color: #F9F1D8;" class="text-2xl sm:text-3xl font-display font-bold leading-tight text-center md:text-left">{{ $selectedShowing->movie->title }}</h2>
-                        <p style="color: #D4AF37;" class="mt-2 font-semibold text-center md:text-left text-sm sm:text-base">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
-                        <p style="color: #806921;" class="text-xs sm:text-sm mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
-
-                        <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
-                            @if($selectedShowing->movie->genres)
-                                @foreach(json_decode($selectedShowing->movie->genres, true) ?? [] as $genre)
-                                    <span style="background-color: #1a1a1a; color: #DDB956; border: 1px solid #554616; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" 
-                                          class="text-[10px] sm:text-xs px-2 py-1.5 rounded-md font-bold uppercase tracking-wider">
-                                        {{ $genre }}
-                                    </span>
-                                @endforeach
-                            @endif
-                        </div>
-                    </div>
-
-                    <div style="border-top: 1px solid #2B230B;" class="mt-6 pt-4">
-                        <p style="color: #806921;" class="text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
-                        <div class="flex flex-col gap-2">
-                            @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)
-                                @php $rating = $selectedShowing->ratings->firstWhere('user_id', $uid); @endphp
-                                <div class="flex items-center justify-between">
-                                    <span style="color: #E6CE7D;" class="font-bold text-sm sm:text-base">{{ $name }}</span>
-                                    @if($rating)
-                                        <span style="background-color: {{ $rating->score == 'liked' ? 'rgba(6, 78, 59, 0.5)' : ($rating->score == 'disliked' ? 'rgba(127, 29, 29, 0.5)' : 'rgba(31, 41, 55, 0.5)') }}; color: {{ $rating->score == 'liked' ? '#34d399' : ($rating->score == 'disliked' ? '#f87171' : '#d1d5db') }}; border-color: {{ $rating->score == 'liked' ? '#064e3b' : ($rating->score == 'disliked' ? '#7f1d1d' : '#374151') }};" class="text-[10px] sm:text-xs px-2 py-1 rounded font-bold uppercase tracking-wide border">
-                                            {{ $rating->score }}
-                                        </span>
-                                    @else
-                                        <span style="color: #554616;" class="text-[10px] sm:text-xs italic">Unrated</span>
-                                    @endif
-                                </div>
+                        <p style="color:#806921;" class="text-[10px] uppercase tracking-widest mb-1 font-bold text-center md:text-left">Admit Two</p>
+                        <h2 style="color:#F9F1D8;" class="text-2xl sm:text-3xl font-display font-bold leading-tight text-center md:text-left">{{ $selectedShowing->movie->title }}</h2>
+                        <p style="color:#D4AF37;" class="mt-1 font-semibold text-center md:text-left text-sm">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
+                        <p style="color:#806921;" class="text-xs mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
+                        <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-1.5">
+                            @foreach(json_decode($selectedShowing->movie->genres ?? '[]', true) as $genre)
+                                <span style="background:#1a1a1a;color:#DDB956;border:1px solid #554616;display:inline-flex;align-items:center;line-height:1;" class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wide">{{ $genre }}</span>
                             @endforeach
                         </div>
                     </div>
+                    <div style="border-top:1px solid #2B230B;" class="mt-4 pt-3">
+                        <p style="color:#806921;" class="text-[10px] uppercase tracking-widest mb-2 font-bold">Ratings</p>
+                        @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)
+                            @php $rating = $selectedShowing->ratings->firstWhere('user_id', $uid); @endphp
+                            <div class="flex items-center justify-between mb-1">
+                                <span style="color:#E6CE7D;" class="font-bold text-sm">{{ $name }}</span>
+                                @if($rating)
+                                    <span style="background:{{ $rating->score=='liked'?'rgba(6,78,59,.5)':($rating->score=='disliked'?'rgba(127,29,29,.5)':'rgba(31,41,55,.5)') }};color:{{ $rating->score=='liked'?'#34d399':($rating->score=='disliked'?'#f87171':'#d1d5db') }};border:1px solid {{ $rating->score=='liked'?'#064e3b':($rating->score=='disliked'?'#7f1d1d':'#374151') }};" class="text-[10px] px-2 py-0.5 rounded font-bold uppercase">{{ $rating->score }}</span>
+                                @else
+                                    <span style="color:#554616;" class="text-[10px] italic">Unrated</span>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
                 @if($selectedShowing->movie->backdrop_path)
-                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}'); background-size: cover; background-position: center; mix-blend-mode: screen;"></div>
+                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image:url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}');background-size:cover;mix-blend-mode:screen;"></div>
                 @endif
             </div>
 
-            <div class="mt-6 flex flex-col items-stretch gap-4 border-t border-gold-900/50 pt-6">
+            <div class="mt-4 space-y-3 border-t border-gold-900/50 pt-4">
                 <div class="grid grid-cols-3 gap-2">
-                    <button wire:click="rateShowing('liked')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-green-900/20 hover:bg-green-900/40 text-green-400 border border-green-800 rounded transition font-bold text-xs sm:text-sm">
-                        <span>👍</span> <span class="hidden sm:inline">Liked</span>
-                    </button>
-                    <button wire:click="rateShowing('meh')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-noir-800 hover:bg-noir-700 text-gold-500 border border-gold-900/50 rounded transition font-bold text-xs sm:text-sm">
-                        <span>😐</span> <span class="hidden sm:inline">Meh</span>
-                    </button>
-                    <button wire:click="rateShowing('disliked')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 rounded transition font-bold text-xs sm:text-sm">
-                        <span>👎</span> <span class="hidden sm:inline">Disliked</span>
-                    </button>
+                    <button wire:click="rateShowing('liked')" class="flex flex-col items-center justify-center gap-1 py-3 bg-green-900/20 hover:bg-green-900/40 text-green-400 border border-green-800 rounded transition font-bold text-xs">👍<span>Liked</span></button>
+                    <button wire:click="rateShowing('meh')" class="flex flex-col items-center justify-center gap-1 py-3 bg-noir-800 hover:bg-noir-700 text-gold-500 border border-gold-900/50 rounded transition font-bold text-xs">😐<span>Meh</span></button>
+                    <button wire:click="rateShowing('disliked')" class="flex flex-col items-center justify-center gap-1 py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 rounded transition font-bold text-xs">👎<span>Disliked</span></button>
                 </div>
-
-                <button @click="downloadTicket()" class="w-full py-3 bg-gold-600 hover:bg-gold-500 text-noir-900 font-bold rounded flex items-center justify-center gap-2 transition shadow-[0_0_15px_rgba(212,175,55,0.3)]">
+                <button @click="downloadTicket()" class="w-full py-3 bg-gold-600 hover:bg-gold-500 text-noir-900 font-bold rounded flex items-center justify-center gap-2 transition">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    <span>Share Ticket Image</span>
+                    Share Ticket Image
                 </button>
             </div>
         </div>

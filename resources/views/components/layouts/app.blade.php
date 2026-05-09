@@ -21,74 +21,86 @@
             background-color: var(--color-noir-950);
             color: var(--color-gold-100);
             font-family: var(--font-serif);
+        }
 
+        /* Background pattern on a pseudo-element so backdrop-filter doesn't
+           break position:fixed descendants (known browser behaviour). */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: -1;
             background-image: url('{{ Vite::asset('resources/images/background.jpg') }}');
             background-repeat: repeat;
             background-size: 612px;
-            backdrop-filter: brightness(0.3);
+            filter: brightness(0.3);
         }
     </style>
 </head>
 
-<body
-    class="antialiased min-h-screen flex items-center justify-center overflow-x-hidden selection:bg-gold-500 selection:text-black">
-    <header
-        class="w-full h-14 fixed top-0 left-0 bg-noir-900/90 backdrop-blur-md border-b border-gold-900/30 z-50 px-4 flex items-center justify-between"
-        x-data="{ mobileMenuOpen: false }">
-        
-        <a href="{{ route('dashboard') }}" class="text-gold-500 font-display font-bold tracking-tighter text-xl">
-            PC
-        </a>
+<body class="antialiased min-h-screen overflow-x-hidden selection:bg-gold-500 selection:text-black">
 
-        {{-- Desktop Navigation --}}
-        <nav class="hidden md:flex items-center space-x-6">
-            @auth
-                <a href="{{ route('index') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Index</a>
-                <a href="{{ route('dashboard') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Dashboard</a>
-                <a href="{{ route('watchlist') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Watchlist</a>
-                <a href="{{ route('bingo') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">The Gauntlet</a>
-                <a href="{{ route('logout') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Logout</a>
-            @else
-                <a href="{{ route('login') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Auth</a>
-            @endauth
-        </nav>
+    {{-- ════════════════════════════════════════════
+         HEADER — Alpine scope wraps button + dropdown together
+         so click.away doesn't fire on the toggle button itself
+    ════════════════════════════════════════════ --}}
+    <div x-data="{ open: false }" class="fixed top-0 left-0 w-full z-[200]">
+        <header class="w-full h-14 bg-noir-900/95 border-b border-gold-900/30 px-4 flex items-center justify-between shadow-lg">
+            <a href="{{ route('dashboard') }}" class="text-gold-500 font-display font-bold tracking-tighter text-xl">
+                PC
+            </a>
 
-        {{-- Mobile Toggle --}}
-        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-gold-500 focus:outline-none p-2">
-            <div class="relative w-6 h-6">
-                {{-- Hamburger --}}
-                <svg x-show="!mobileMenuOpen" class="w-6 h-6 absolute inset-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            {{-- Desktop Navigation --}}
+            <nav class="hidden md:flex items-center space-x-6">
+                @auth
+                    <a href="{{ route('index') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Index</a>
+                    <a href="{{ route('dashboard') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Dashboard</a>
+                    <a href="{{ route('watchlist') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Watchlist</a>
+                    <a href="{{ route('bingo') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">The Gauntlet</a>
+                    <a href="{{ route('logout') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Logout</a>
+                @else
+                    <a href="{{ route('login') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Auth</a>
+                @endauth
+            </nav>
+
+            {{-- Mobile Toggle --}}
+            <button @click="open = !open" class="md:hidden text-gold-500 focus:outline-none p-2 -mr-2">
+                <svg x-show="!open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
-                {{-- Close --}}
-                <svg x-show="mobileMenuOpen" class="w-6 h-6 absolute inset-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                <svg x-show="open" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display:none;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
-            </div>
-        </button>
+            </button>
+        </header>
 
-        {{-- Mobile Navigation --}}
-        <div x-show="mobileMenuOpen" 
-             x-cloak
+        {{-- Mobile Dropdown --}}
+        <div x-show="open"
              x-transition:enter="transition ease-out duration-200"
-             x-transition:enter-start="opacity-0 -translate-y-4"
+             x-transition:enter-start="opacity-0 -translate-y-2"
              x-transition:enter-end="opacity-100 translate-y-0"
-             @click.away="mobileMenuOpen = false"
-             class="absolute top-14 left-0 w-full bg-noir-900 border-b border-gold-900/30 md:hidden flex flex-col p-4 space-y-4 shadow-xl z-[100]">
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 -translate-y-2"
+             @click.outside="open = false"
+             class="w-full bg-noir-900/98 border-b border-gold-900/30 flex-col p-4 space-y-1 shadow-2xl"
+             style="display:none;">
             @auth
-                <a href="{{ route('index') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">Index</a>
-                <a href="{{ route('dashboard') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">Dashboard</a>
-                <a href="{{ route('watchlist') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">Watchlist</a>
-                <a href="{{ route('bingo') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">The Gauntlet</a>
-                <a href="{{ route('logout') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2">Logout</a>
+                <a href="{{ route('index') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Index</a>
+                <a href="{{ route('dashboard') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Dashboard</a>
+                <a href="{{ route('watchlist') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Watchlist</a>
+                <a href="{{ route('bingo') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">The Gauntlet</a>
+                <a href="{{ route('logout') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 hover:text-gold-300 transition-colors block">Logout</a>
             @else
-                <a href="{{ route('login') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2">Auth</a>
+                <a href="{{ route('login') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 hover:text-gold-300 transition-colors block">Auth</a>
             @endauth
         </div>
-    </header>
+    </div>
+
     <main class="w-full mx-auto pt-14">
         {{ $slot }}
     </main>
+
 </body>
 
 </html>

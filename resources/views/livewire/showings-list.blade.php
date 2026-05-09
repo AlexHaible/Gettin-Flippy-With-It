@@ -144,11 +144,35 @@
          x-data="{
             downloadTicket() {
                 const ticketEl = document.getElementById('ticket-card');
-                html2canvas(ticketEl, { backgroundColor: '#0a0a0a', scale: 2 }).then(canvas => {
+                
+                // We use onclone to modify the element before capture to ensure compatibility
+                html2canvas(ticketEl, { 
+                    backgroundColor: '#0a0a0a', 
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    onclone: (clonedDoc) => {
+                        const el = clonedDoc.getElementById('ticket-card');
+                        // Force standard colors on the clone to avoid oklab/oklch issues
+                        el.style.backgroundColor = '#050505';
+                        el.style.borderColor = '#2B230B';
+                        // Remove any modern filters or complex gradients that might break
+                        el.querySelectorAll('*').forEach(child => {
+                            const style = window.getComputedStyle(child);
+                            if (style.color.includes('okl') || style.backgroundColor.includes('okl')) {
+                                // Fallback for modern colors
+                                child.style.color = '#F9F1D8';
+                            }
+                        });
+                    }
+                }).then(canvas => {
                     const link = document.createElement('a');
                     link.download = 'popcorn-ticket-{{ \Illuminate\Support\Str::slug($selectedShowing->movie->title) }}.png';
                     link.href = canvas.toDataURL('image/png');
                     link.click();
+                }).catch(err => {
+                    console.error('Ticket capture failed:', err);
+                    alert('Could not generate ticket image. Try taking a screenshot instead!');
                 });
             }
          }">
@@ -157,7 +181,8 @@
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
-            <div id="ticket-card" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded bg-noir-950 border border-gold-900/50 relative overflow-hidden">
+            {{-- We use explicit Hex/RGB here to ensure html2canvas doesn't trip on oklab/oklch --}}
+            <div id="ticket-card" style="background-color: #050505; border-color: rgba(43, 35, 11, 0.5);" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded border relative overflow-hidden">
                 @if($selectedShowing->movie->poster_path)
                     <div class="flex justify-center md:block">
                         <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" class="w-28 sm:w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
@@ -165,37 +190,41 @@
                 @endif
                 <div class="z-10 relative flex-1 flex flex-col justify-between">
                     <div>
-                        <p class="text-gold-600 text-[10px] sm:text-xs uppercase tracking-widest mb-1 font-bold text-center md:text-left">Admit Two</p>
-                        <h2 class="text-2xl sm:text-3xl font-display text-gold-100 font-bold leading-tight text-center md:text-left">{{ $selectedShowing->movie->title }}</h2>
-                        <p class="text-gold-500 mt-2 font-semibold text-center md:text-left text-sm sm:text-base">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
-                        <p class="text-gold-700 text-xs sm:text-sm mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
+                        <p style="color: #806921;" class="text-[10px] sm:text-xs uppercase tracking-widest mb-1 font-bold text-center md:text-left">Admit Two</p>
+                        <h2 style="color: #F9F1D8;" class="text-2xl sm:text-3xl font-display font-bold leading-tight text-center md:text-left">{{ $selectedShowing->movie->title }}</h2>
+                        <p style="color: #D4AF37;" class="mt-2 font-semibold text-center md:text-left text-sm sm:text-base">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
+                        <p style="color: #806921;" class="text-xs sm:text-sm mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
 
                         <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-1.5 sm:gap-2">
                             @if($selectedShowing->movie->genres)
                                 @foreach(json_decode($selectedShowing->movie->genres, true) ?? [] as $genre)
-                                    <span class="text-[10px] sm:text-xs bg-gold-900/30 text-gold-400 px-2 py-0.5 rounded border border-gold-800">{{ $genre }}</span>
+                                    <span style="background-color: rgba(43, 35, 11, 0.3); color: #DDB956; border-color: #554616;" class="text-[10px] sm:text-xs px-2 py-0.5 rounded border">{{ $genre }}</span>
                                 @endforeach
                             @endif
                         </div>
                     </div>
 
-                    <div class="mt-6 border-t border-gold-900/50 pt-4">
-                        <p class="text-gold-600 text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
+                    <div style="border-top-color: rgba(43, 35, 11, 0.5);" class="mt-6 border-t pt-4">
+                        <p style="color: #806921;" class="text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
                         <div class="flex flex-col gap-2">
                             @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)
                                 @php $rating = $selectedShowing->ratings->firstWhere('user_id', $uid); @endphp
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gold-300 font-bold text-sm sm:text-base">{{ $name }}</span>
-                                    <span class="text-[10px] sm:text-xs px-2 py-1 rounded font-bold uppercase tracking-wide {{ $rating ? ($rating->score == 'liked' ? 'bg-green-900/50 text-green-400 border border-green-800' : ($rating->score == 'disliked' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-300 border border-gray-600')) : 'text-gold-800 italic border border-transparent' }}">
-                                        {{ $rating ? $rating->score : 'Unrated' }}
-                                    </span>
+                                    <span style="color: #E6CE7D;" class="font-bold text-sm sm:text-base">{{ $name }}</span>
+                                    @if($rating)
+                                        <span style="background-color: {{ $rating->score == 'liked' ? 'rgba(6, 78, 59, 0.5)' : ($rating->score == 'disliked' ? 'rgba(127, 29, 29, 0.5)' : 'rgba(31, 41, 55, 0.5)') }}; color: {{ $rating->score == 'liked' ? '#34d399' : ($rating->score == 'disliked' ? '#f87171' : '#d1d5db') }}; border-color: {{ $rating->score == 'liked' ? '#064e3b' : ($rating->score == 'disliked' ? '#7f1d1d' : '#374151') }};" class="text-[10px] sm:text-xs px-2 py-1 rounded font-bold uppercase tracking-wide border">
+                                            {{ $rating->score }}
+                                        </span>
+                                    @else
+                                        <span style="color: #554616;" class="text-[10px] sm:text-xs italic">Unrated</span>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
                     </div>
                 </div>
                 @if($selectedShowing->movie->backdrop_path)
-                    <div class="absolute inset-0 opacity-10 mix-blend-screen pointer-events-none" style="background-image: url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}'); background-size: cover; background-position: center;"></div>
+                    <div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}'); background-size: cover; background-position: center; mix-blend-mode: screen;"></div>
                 @endif
             </div>
 

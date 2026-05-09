@@ -54,19 +54,27 @@
         </nav>
 
         {{-- Mobile Toggle --}}
-        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-gold-500 focus:outline-none">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path x-show="!mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                <path x-show="mobileMenuOpen" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
+        <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden text-gold-500 focus:outline-none p-2">
+            <div class="relative w-6 h-6">
+                {{-- Hamburger --}}
+                <svg x-show="!mobileMenuOpen" class="w-6 h-6 absolute inset-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                {{-- Close --}}
+                <svg x-show="mobileMenuOpen" class="w-6 h-6 absolute inset-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" x-cloak>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </div>
         </button>
 
         {{-- Mobile Navigation --}}
         <div x-show="mobileMenuOpen" 
+             x-cloak
              x-transition:enter="transition ease-out duration-200"
              x-transition:enter-start="opacity-0 -translate-y-4"
              x-transition:enter-end="opacity-100 translate-y-0"
-             class="absolute top-14 left-0 w-full bg-noir-900 border-b border-gold-900/30 md:hidden flex flex-col p-4 space-y-4 shadow-xl">
+             @click.away="mobileMenuOpen = false"
+             class="absolute top-14 left-0 w-full bg-noir-900 border-b border-gold-900/30 md:hidden flex flex-col p-4 space-y-4 shadow-xl z-[100]">
             @auth
                 <a href="{{ route('index') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">Index</a>
                 <a href="{{ route('dashboard') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-2 border-b border-gold-900/10">Dashboard</a>

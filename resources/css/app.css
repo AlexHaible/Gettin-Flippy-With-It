@@ -60,4 +60,8 @@
         transform: rotate(45deg);
         box-shadow: 0 0 5px var(--color-gold-500);
     }
+
+    [x-cloak] {
+        display: none !important;
+    }
 }

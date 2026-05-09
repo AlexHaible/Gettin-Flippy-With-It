@@ -200,10 +200,12 @@
             </button>
 
             {{-- We use explicit Hex/RGB here to ensure html2canvas doesn't trip on oklab/oklch --}}
-            <div id="ticket-card" style="background-color: #050505; border-color: rgba(43, 35, 11, 0.5);" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded border relative overflow-hidden">
+            <div id="ticket-card" style="background-color: #050505; border: 1px solid #2B230B;" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded relative overflow-hidden">
                 @if($selectedShowing->movie->poster_path)
                     <div class="flex justify-center md:block">
-                        <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" class="w-28 sm:w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
+                        <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" 
+                             crossorigin="anonymous"
+                             class="w-28 sm:w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
                     </div>
                 @endif
                 <div class="z-10 relative flex-1 flex flex-col justify-between">
@@ -213,16 +215,19 @@
                         <p style="color: #D4AF37;" class="mt-2 font-semibold text-center md:text-left text-sm sm:text-base">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
                         <p style="color: #806921;" class="text-xs sm:text-sm mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
 
-                        <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-1.5 sm:gap-2">
+                        <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-2">
                             @if($selectedShowing->movie->genres)
                                 @foreach(json_decode($selectedShowing->movie->genres, true) ?? [] as $genre)
-                                    <span style="background-color: rgba(43, 35, 11, 0.3); color: #DDB956; border-color: #554616;" class="text-[10px] sm:text-xs px-2 py-0.5 rounded border">{{ $genre }}</span>
+                                    <span style="background-color: #1a1a1a; color: #DDB956; border: 1px solid #554616; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" 
+                                          class="text-[10px] sm:text-xs px-2 py-1.5 rounded-md font-bold uppercase tracking-wider">
+                                        {{ $genre }}
+                                    </span>
                                 @endforeach
                             @endif
                         </div>
                     </div>
 
-                    <div style="border-top-color: rgba(43, 35, 11, 0.5);" class="mt-6 border-t pt-4">
+                    <div style="border-top: 1px solid #2B230B;" class="mt-6 pt-4">
                         <p style="color: #806921;" class="text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
                         <div class="flex flex-col gap-2">
                             @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)

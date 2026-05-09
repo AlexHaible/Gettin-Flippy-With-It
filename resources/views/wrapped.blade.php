@@ -1,7 +1,7 @@
 <x-layouts.app>
     @if(isset($heroBackdrop) && $heroBackdrop)
     <style>
-        body {
+        body::before {
             background-image: url('{{ $heroBackdrop }}') !important;
             background-size: cover !important;
             background-position: center !important;

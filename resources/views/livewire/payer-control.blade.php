@@ -29,7 +29,7 @@
                 wire:click="flip"
                 wire:key="payer-btn"
                 wire:transition.opacity.duration.500ms
-                class="group relative min-w-[340px] bg-noir-900 p-2 text-center uppercase tracking-[0.4em] shadow-[inset_0_0_0_1px_var(--color-gold-500)]"
+                class="group relative w-full max-w-[340px] bg-noir-900 p-2 text-center uppercase tracking-[0.4em] shadow-[inset_0_0_0_1px_var(--color-gold-500)]"
             >
                 {{-- Button Label --}}
                 <span class="block bg-transparent px-8 py-6 text-2xl font-display font-bold text-gold-500 transition-colors duration-500 group-hover:bg-gold-500/90 group-hover:text-black">
@@ -59,7 +59,7 @@
         @else
             {{-- STATIC CARD --}}
             <div wire:key="payer-static" wire:transition.opacity.duration.500ms
-                 class="relative min-w-[340px] px-8 py-10 bg-noir-900 deco-border-metallic border-2 shadow-2xl flex flex-col items-center"
+                 class="relative w-full max-w-[340px] px-8 py-10 bg-noir-900 deco-border-metallic border-2 shadow-2xl flex flex-col items-center"
             >
 
                 <h1 class="text-6xl md:text-7xl font-display font-bold text-gold-500 text-shadow-gold">

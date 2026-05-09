@@ -8,33 +8,33 @@
     </div>
 
     {{-- Toolbar --}}
-    <div class="mb-6 flex justify-between items-center">
-        <a href="{{ route('dashboard') }}" class="text-gold-500 hover:text-gold-300 font-semibold flex items-center transition-colors">
-            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-            Back to Dashboard
+    <div class="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <a href="{{ route('dashboard') }}" class="text-gold-500 hover:text-gold-300 font-semibold flex items-center transition-colors text-sm">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+            Dashboard
         </a>
 
         {{-- View Toggle --}}
         <div class="flex items-center gap-1 bg-noir-900 border border-gold-900/50 rounded-lg p-1">
             <button wire:click="setView('list')"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-semibold transition
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] sm:text-sm font-semibold transition
                     {{ $viewMode === 'list' ? 'bg-gold-600 text-noir-900' : 'text-gold-500 hover:text-gold-300' }}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
+                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path></svg>
                 List
             </button>
             <button wire:click="setView('grid')"
-                class="flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-semibold transition
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded text-[10px] sm:text-sm font-semibold transition
                     {{ $viewMode === 'grid' ? 'bg-gold-600 text-noir-900' : 'text-gold-500 hover:text-gold-300' }}">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
-                Stub Book
+                <svg class="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path></svg>
+                Stubs
             </button>
         </div>
 
-        <span class="text-gold-700 text-sm">
+        <span class="text-gold-700 text-[10px] sm:text-sm uppercase tracking-widest">
             @if($viewMode === 'list')
-                Showing {{ $showings->count() }} of {{ $showings->total() }}
+                {{ $showings->count() }} / {{ $showings->total() }}
             @else
-                {{ $showings->count() }} films
+                {{ $showings->count() }} Films
             @endif
         </span>
     </div>
@@ -140,7 +140,7 @@
          RATING / TICKET MODAL (shared by both views)
     ══════════════════════════════════════════════ --}}
     @if($showModal && $selectedShowing)
-    <div class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+    <div class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-sm"
          x-data="{
             downloadTicket() {
                 const ticketEl = document.getElementById('ticket-card');
@@ -152,39 +152,41 @@
                 });
             }
          }">
-        <div class="bg-noir-900 border-2 deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-6 relative max-h-[90vh] overflow-y-auto" @click.away="$wire.closeModal()">
-            <button wire:click="closeModal" class="sticky top-0 left-full block ml-auto z-50 text-gold-500 hover:text-white -mt-2 -mr-2 mb-2">
+        <div class="bg-noir-900 border-2 deco-border-metallic rounded-lg shadow-2xl max-w-2xl w-full p-4 sm:p-6 relative max-h-[95vh] overflow-y-auto" @click.away="$wire.closeModal()">
+            <button wire:click="closeModal" class="sticky top-0 left-full block ml-auto z-[70] text-gold-500 hover:text-white -mt-2 -mr-2 mb-2 p-2">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
 
-            <div id="ticket-card" class="flex flex-col md:flex-row gap-6 p-6 rounded bg-noir-950 border border-gold-900/50 relative overflow-hidden">
+            <div id="ticket-card" class="flex flex-col md:flex-row gap-4 sm:gap-6 p-4 sm:p-6 rounded bg-noir-950 border border-gold-900/50 relative overflow-hidden">
                 @if($selectedShowing->movie->poster_path)
-                    <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" class="w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
+                    <div class="flex justify-center md:block">
+                        <img src="https://image.tmdb.org/t/p/w300{{ $selectedShowing->movie->poster_path }}" class="w-28 sm:w-32 md:w-48 rounded shadow-lg shadow-black z-10 relative">
+                    </div>
                 @endif
                 <div class="z-10 relative flex-1 flex flex-col justify-between">
                     <div>
-                        <p class="text-gold-600 text-xs uppercase tracking-widest mb-1 font-bold">Admit Two</p>
-                        <h2 class="text-3xl font-display text-gold-100 font-bold leading-tight">{{ $selectedShowing->movie->title }}</h2>
-                        <p class="text-gold-500 mt-2 font-semibold">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
-                        <p class="text-gold-700 text-sm mt-1">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
+                        <p class="text-gold-600 text-[10px] sm:text-xs uppercase tracking-widest mb-1 font-bold text-center md:text-left">Admit Two</p>
+                        <h2 class="text-2xl sm:text-3xl font-display text-gold-100 font-bold leading-tight text-center md:text-left">{{ $selectedShowing->movie->title }}</h2>
+                        <p class="text-gold-500 mt-2 font-semibold text-center md:text-left text-sm sm:text-base">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
+                        <p class="text-gold-700 text-xs sm:text-sm mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
 
-                        <div class="mt-3 flex flex-wrap gap-2">
+                        <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-1.5 sm:gap-2">
                             @if($selectedShowing->movie->genres)
                                 @foreach(json_decode($selectedShowing->movie->genres, true) ?? [] as $genre)
-                                    <span class="text-xs bg-gold-900/30 text-gold-400 px-2 py-0.5 rounded border border-gold-800">{{ $genre }}</span>
+                                    <span class="text-[10px] sm:text-xs bg-gold-900/30 text-gold-400 px-2 py-0.5 rounded border border-gold-800">{{ $genre }}</span>
                                 @endforeach
                             @endif
                         </div>
                     </div>
 
                     <div class="mt-6 border-t border-gold-900/50 pt-4">
-                        <p class="text-gold-600 text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
+                        <p class="text-gold-600 text-[10px] sm:text-xs uppercase tracking-widest mb-2 font-bold">Ratings</p>
                         <div class="flex flex-col gap-2">
                             @foreach(['Alex' => 1, 'Casper' => 2] as $name => $uid)
                                 @php $rating = $selectedShowing->ratings->firstWhere('user_id', $uid); @endphp
                                 <div class="flex items-center justify-between">
-                                    <span class="text-gold-300 font-bold">{{ $name }}</span>
-                                    <span class="text-sm px-2 py-1 rounded font-bold uppercase tracking-wide {{ $rating ? ($rating->score == 'liked' ? 'bg-green-900/50 text-green-400 border border-green-800' : ($rating->score == 'disliked' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-300 border border-gray-600')) : 'text-gold-800 italic border border-transparent' }}">
+                                    <span class="text-gold-300 font-bold text-sm sm:text-base">{{ $name }}</span>
+                                    <span class="text-[10px] sm:text-xs px-2 py-1 rounded font-bold uppercase tracking-wide {{ $rating ? ($rating->score == 'liked' ? 'bg-green-900/50 text-green-400 border border-green-800' : ($rating->score == 'disliked' ? 'bg-red-900/50 text-red-400 border border-red-800' : 'bg-gray-800 text-gray-300 border border-gray-600')) : 'text-gold-800 italic border border-transparent' }}">
                                         {{ $rating ? $rating->score : 'Unrated' }}
                                     </span>
                                 </div>
@@ -193,20 +195,26 @@
                     </div>
                 </div>
                 @if($selectedShowing->movie->backdrop_path)
-                    <div class="absolute inset-0 opacity-10 mix-blend-screen" style="background-image: url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}'); background-size: cover; background-position: center;"></div>
+                    <div class="absolute inset-0 opacity-10 mix-blend-screen pointer-events-none" style="background-image: url('https://image.tmdb.org/t/p/w500{{ $selectedShowing->movie->backdrop_path }}'); background-size: cover; background-position: center;"></div>
                 @endif
             </div>
 
-            <div class="mt-6 flex flex-col md:flex-row items-center justify-between gap-4 border-t border-gold-900/50 pt-6">
-                <div class="flex gap-2">
-                    <button wire:click="rateShowing('liked')" class="px-4 py-2 bg-green-900/30 hover:bg-green-900/60 text-green-400 border border-green-800 rounded transition font-bold">👍 Liked</button>
-                    <button wire:click="rateShowing('meh')" class="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 border border-gray-600 rounded transition font-bold">😐 Meh</button>
-                    <button wire:click="rateShowing('disliked')" class="px-4 py-2 bg-red-900/30 hover:bg-red-900/60 text-red-400 border border-red-800 rounded transition font-bold">👎 Disliked</button>
+            <div class="mt-6 flex flex-col items-stretch gap-4 border-t border-gold-900/50 pt-6">
+                <div class="grid grid-cols-3 gap-2">
+                    <button wire:click="rateShowing('liked')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-green-900/20 hover:bg-green-900/40 text-green-400 border border-green-800 rounded transition font-bold text-xs sm:text-sm">
+                        <span>👍</span> <span class="hidden sm:inline">Liked</span>
+                    </button>
+                    <button wire:click="rateShowing('meh')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-noir-800 hover:bg-noir-700 text-gold-500 border border-gold-900/50 rounded transition font-bold text-xs sm:text-sm">
+                        <span>😐</span> <span class="hidden sm:inline">Meh</span>
+                    </button>
+                    <button wire:click="rateShowing('disliked')" class="flex flex-col sm:flex-row items-center justify-center gap-1 px-2 py-2 sm:py-3 bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-800 rounded transition font-bold text-xs sm:text-sm">
+                        <span>👎</span> <span class="hidden sm:inline">Disliked</span>
+                    </button>
                 </div>
 
-                <button @click="downloadTicket()" class="px-4 py-2 bg-gold-600 hover:bg-gold-500 text-noir-900 font-bold rounded flex items-center gap-2 transition shadow-[0_0_10px_var(--color-gold-700)]">
+                <button @click="downloadTicket()" class="w-full py-3 bg-gold-600 hover:bg-gold-500 text-noir-900 font-bold rounded flex items-center justify-center gap-2 transition shadow-[0_0_15px_rgba(212,175,55,0.3)]">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                    Share Ticket
+                    <span>Share Ticket Image</span>
                 </button>
             </div>
         </div>

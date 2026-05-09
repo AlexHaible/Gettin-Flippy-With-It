@@ -38,20 +38,20 @@
                 </h2>
 
                 @php $nextShowing = $upcomingShowings->first(); @endphp
-                <div class="flex flex-col md:flex-row md:items-center justify-between">
-                    <div class="flex items-center space-x-4 mb-4 md:mb-0">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left space-y-4 sm:space-y-0 sm:space-x-6 mb-4 md:mb-0">
                         @if($nextShowing->movie->poster_path)
-                        <img src="https://image.tmdb.org/t/p/w200{{ $nextShowing->movie->poster_path }}" alt="Poster" class="w-20 h-32 object-cover rounded shadow-md border border-gold-800">
+                        <img src="https://image.tmdb.org/t/p/w200{{ $nextShowing->movie->poster_path }}" alt="Poster" class="w-24 sm:w-20 h-36 sm:h-32 object-cover rounded shadow-md border border-gold-800">
                         @endif
                         <div>
-                            <h3 class="text-3xl font-bold font-display text-gold-100">{{ $nextShowing->movie->title }}</h3>
-                            <p class="text-gold-500 text-lg">{{ $nextShowing->cinema->name }} • {{ $nextShowing->hall_name ?? 'TBA' }}</p>
-                            <p class="text-gold-400 font-mono mt-1">{{ $nextShowing->start_time->diffForHumans() }}</p>
+                            <h3 class="text-2xl sm:text-3xl font-bold font-display text-gold-100 leading-tight">{{ $nextShowing->movie->title }}</h3>
+                            <p class="text-gold-500 text-base sm:text-lg mt-1">{{ $nextShowing->cinema->name }} • {{ $nextShowing->hall_name ?? 'TBA' }}</p>
+                            <p class="text-gold-400 font-mono mt-2 text-sm">{{ $nextShowing->start_time->diffForHumans() }}</p>
                         </div>
                     </div>
-                    <div class="bg-noir-950 p-4 rounded border border-gold-900/50 text-center">
-                        <p class="text-sm text-gold-600 uppercase tracking-widest mb-1">Snack Payer</p>
-                        <p class="text-xl font-bold text-gold-400">{{ $nextShowing->popcornPayer->username ?? 'Unknown' }}</p>
+                    <div class="bg-noir-950 p-4 rounded border border-gold-900/50 text-center flex-shrink-0">
+                        <p class="text-[10px] text-gold-600 uppercase tracking-widest mb-1">Snack Payer</p>
+                        <p class="text-lg font-bold text-gold-400">{{ $nextShowing->popcornPayer->username ?? 'Unknown' }}</p>
                     </div>
                 </div>
             </div>
@@ -246,9 +246,9 @@
 
         <!-- Recommendations -->
         @if($recommendations->isNotEmpty())
-        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20 mb-8">
+        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-4 sm:p-6 shadow-lg shadow-gold-900/20 mb-8">
             <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider">In Theaters: You Should See</h2>
-            <div class="grid grid-cols-4 gap-3">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 @foreach($recommendations as $movie)
                 <div class="relative group overflow-hidden rounded border border-gold-900/50">
                     @if(!empty($movie['poster_path']))
@@ -267,29 +267,29 @@
 
         {{-- Rewatch Radar --}}
         @if($rewatchRadar)
-        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-6 shadow-lg shadow-gold-900/20 mb-8">
+        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-4 sm:p-6 shadow-lg shadow-gold-900/20 mb-8">
             <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider flex items-center gap-2">
                 <svg class="w-5 h-5 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                 </svg>
                 Rewatch Radar
             </h2>
-            <div class="flex items-center gap-6">
+            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
                 @if($rewatchRadar['prev_poster'])
                 <img src="https://image.tmdb.org/t/p/w200{{ $rewatchRadar['prev_poster'] }}"
-                    class="w-20 rounded shadow-lg shadow-black flex-shrink-0">
+                    class="w-24 sm:w-20 rounded shadow-lg shadow-black flex-shrink-0">
                 @endif
                 <div>
-                    <p class="text-gold-600 text-xs uppercase tracking-widest mb-1">Before you see…</p>
-                    <p class="text-gold-300 font-bold font-display text-lg">{{ $rewatchRadar['watchlist_title'] }}</p>
-                    <p class="text-gold-600 text-sm mt-2">…time to rewatch</p>
-                    <p class="text-gold-100 font-bold font-display text-xl mt-0.5">
+                    <p class="text-gold-600 text-[10px] uppercase tracking-widest mb-1">Before you see…</p>
+                    <p class="text-gold-300 font-bold font-display text-lg leading-tight">{{ $rewatchRadar['watchlist_title'] }}</p>
+                    <p class="text-gold-600 text-xs mt-3">…time to rewatch</p>
+                    <p class="text-gold-100 font-bold font-display text-xl mt-0.5 leading-tight">
                         {{ $rewatchRadar['prev_title'] }}
                         @if($rewatchRadar['prev_year'])
                         <span class="text-gold-700 text-sm font-normal">({{ $rewatchRadar['prev_year'] }})</span>
                         @endif
                     </p>
-                    <p class="text-gold-700 text-xs mt-2 italic">Part of the {{ $rewatchRadar['collection_name'] }}</p>
+                    <p class="text-gold-700 text-[10px] mt-2 italic opacity-60">Part of the {{ $rewatchRadar['collection_name'] }}</p>
                 </div>
             </div>
         </div>

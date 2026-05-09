@@ -140,39 +140,57 @@
          RATING / TICKET MODAL (shared by both views)
     ══════════════════════════════════════════════ --}}
     @if($showModal && $selectedShowing)
-    <div class="fixed inset-0 z-[60] flex items-center justify-center p-2 sm:p-4 bg-black/90 backdrop-blur-sm"
+    <div class="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4 bg-black/95 backdrop-blur-md"
+         x-init="document.body.style.overflow = 'hidden'; return () => document.body.style.overflow = 'auto'"
          x-data="{
             downloadTicket() {
                 const ticketEl = document.getElementById('ticket-card');
                 
-                // We use onclone to modify the element before capture to ensure compatibility
                 html2canvas(ticketEl, { 
-                    backgroundColor: '#0a0a0a', 
+                    backgroundColor: '#050505', 
                     scale: 2,
                     useCORS: true,
-                    allowTaint: true,
+                    logging: false,
                     onclone: (clonedDoc) => {
                         const el = clonedDoc.getElementById('ticket-card');
-                        // Force standard colors on the clone to avoid oklab/oklch issues
-                        el.style.backgroundColor = '#050505';
-                        el.style.borderColor = '#2B230B';
-                        // Remove any modern filters or complex gradients that might break
-                        el.querySelectorAll('*').forEach(child => {
-                            const style = window.getComputedStyle(child);
-                            if (style.color.includes('okl') || style.backgroundColor.includes('okl')) {
-                                // Fallback for modern colors
-                                child.style.color = '#F9F1D8';
+                        
+                        // AGGRESSIVE CLEANUP: Remove all modern CSS that breaks html2canvas
+                        const cleanElement = (node) => {
+                            const computed = window.getComputedStyle(node);
+                            
+                            // 1. Convert colors to hex/rgb if they are modern
+                            if (computed.color.includes('okl')) node.style.color = '#F9F1D8';
+                            if (computed.backgroundColor.includes('okl')) node.style.backgroundColor = '#050505';
+                            if (computed.borderColor.includes('okl')) node.style.borderColor = '#2B230B';
+                            
+                            // 2. Kill modern properties that often use modern colors internally
+                            node.style.borderImage = 'none';
+                            node.style.textShadow = 'none';
+                            node.style.boxShadow = 'none';
+                            node.style.backdropFilter = 'none';
+                            
+                            // 3. Remove background gradients that might use oklch
+                            if (computed.backgroundImage.includes('gradient')) {
+                                node.style.backgroundImage = 'none';
                             }
-                        });
+                            
+                            // Recurse
+                            Array.from(node.children).forEach(cleanElement);
+                        };
+
+                        cleanElement(el);
+                        
+                        // Force solid background for the card
+                        el.style.background = '#050505';
+                        el.style.border = '1px solid #2B230B';
                     }
                 }).then(canvas => {
                     const link = document.createElement('a');
-                    link.download = 'popcorn-ticket-{{ \Illuminate\Support\Str::slug($selectedShowing->movie->title) }}.png';
+                    link.download = 'ticket-{{ \Illuminate\Support\Str::slug($selectedShowing->movie->title) }}.png';
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                 }).catch(err => {
-                    console.error('Ticket capture failed:', err);
-                    alert('Could not generate ticket image. Try taking a screenshot instead!');
+                    console.error('Capture failed:', err);
                 });
             }
          }">

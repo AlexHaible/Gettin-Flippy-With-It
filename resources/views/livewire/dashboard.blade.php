@@ -1,13 +1,13 @@
 <div>
     @if(isset($heroBackdrop) && $heroBackdrop)
     <style>
-        body {
+        body::before {
             background-image: url('{{ $heroBackdrop }}') !important;
             background-size: cover !important;
             background-position: center 20% !important;
             background-attachment: fixed !important;
             background-repeat: no-repeat !important;
-            backdrop-filter: brightness(0.2) !important;
+            filter: brightness(0.2) !important;
         }
     </style>
     @endif

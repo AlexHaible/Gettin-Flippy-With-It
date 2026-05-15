@@ -44,5 +44,14 @@
                 @endforelse
             </div>
         </div>
+
+        {{-- Browse More Navigation --}}
+        <div class="mt-12 text-center">
+            <div class="deco-divider w-32 mx-auto mb-6"></div>
+            <a href="{{ route('browse') }}" class="inline-block px-8 py-3 bg-noir-900 border border-gold-900/50 text-gold-500 hover:text-gold-300 font-bold uppercase tracking-widest rounded-lg transition-all hover:border-gold-500 shadow-lg">
+                Browse Full Catalog
+            </a>
+            <p class="text-gold-700 text-[10px] uppercase tracking-[0.3em] mt-4">Genres • Cast • History</p>
+        </div>
     </div>
 </x-layouts.app>

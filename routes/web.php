@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EntityController;
 use App\Http\Controllers\BingoController;
+use App\Livewire\Browse;
 use App\Livewire\Dashboard;
 use App\Livewire\ShowingsList;
 use App\Livewire\Watchlist;
@@ -25,6 +26,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/showings', ShowingsList::class)->name('showings');
     Route::get('/watchlist', Watchlist::class)->name('watchlist');
     Route::get('/wrapped/{year?}', Wrapped::class)->name('wrapped');
+    Route::get('/browse', Browse::class)->name('browse');
 
     Route::get('/actor/{name}', [EntityController::class, 'actor'])->name('actor');
     Route::get('/genre/{name}', [EntityController::class, 'genre'])->name('genre');

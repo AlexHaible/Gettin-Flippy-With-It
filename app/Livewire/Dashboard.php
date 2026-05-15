@@ -71,8 +71,6 @@ class Dashboard extends Component
         $heroBackdrop = null;
         if ($upcomingShowings->isNotEmpty() && $upcomingShowings->first()->movie->backdrop_path) {
             $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $upcomingShowings->first()->movie->backdrop_path;
-        } elseif ($recentShowings->isNotEmpty() && $recentShowings->first()->movie->backdrop_path) {
-            $heroBackdrop = 'https://image.tmdb.org/t/p/original' . $recentShowings->first()->movie->backdrop_path;
         }
 
         $allMovies = Movie::withCount('showings')->get();

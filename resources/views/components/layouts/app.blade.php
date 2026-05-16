@@ -67,6 +67,7 @@
                 {{-- Desktop Navigation --}}
                 <nav class="hidden md:flex items-center space-x-6">
                     @auth
+                        <a href="{{ route('index') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Home</a>
                         <a href="{{ route('dashboard') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Dashboard</a>
                         
                         {{-- Library Dropdown --}}
@@ -105,7 +106,6 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('index') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Calendar</a>
                         <a href="{{ route('watchlist') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">Watchlist</a>
                         <a href="{{ route('bingo') }}" class="text-gold-500 hover:text-gold-300 font-semibold text-sm uppercase tracking-widest transition-colors">The Gauntlet</a>
                     @endauth
@@ -144,9 +144,9 @@
              style="display:none;"
              x-data="{ mobileLibraryOpen: false }">
             @auth
+                <a href="{{ route('index') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Home</a>
                 <a href="{{ route('dashboard') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Dashboard</a>
                 <a href="{{ route('browse') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Library</a>
-                <a href="{{ route('index') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Calendar</a>
                 <a href="{{ route('watchlist') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">Watchlist</a>
                 <a href="{{ route('bingo') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 border-b border-gold-900/20 hover:text-gold-300 transition-colors block">The Gauntlet</a>
                 <a href="{{ route('logout') }}" class="text-gold-500 font-semibold uppercase tracking-widest py-3 px-2 hover:text-gold-300 transition-colors block">Logout</a>

@@ -12,4 +12,4 @@ Artisan::command('calendar:import', function (CalendarImportService $importer) {
         $this->error('Error importing calendar: '.$e->getMessage());
     }
 })->purpose('Fetch and parse Google Calendar events for movie nights')
-    ->hourly();
+    ->everyFiveMinutes();

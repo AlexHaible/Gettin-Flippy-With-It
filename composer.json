@@ -1,15 +1,15 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/laravel",
+    "name": "alexhaible/cinema",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Popcorn Protocol.",
     "keywords": [
         "laravel",
         "framework"
     ],
     "license": "MIT",
     "require": {
-        "php": "^8.4",
+        "php": "^8.5",
         "google-gemini-php/client": "^2.7",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",

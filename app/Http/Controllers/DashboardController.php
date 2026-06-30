@@ -135,69 +135,7 @@ class DashboardController extends Controller
         $projectedMovies = round($currentYearMoviesCount * $paceMultiplier);
         $projectedSpend = round($currentYearSpendCount * $paceMultiplier);
 
-        // 14. Recommendations (You Should See)
-        $tmdbService = app(TmdbService::class);
-        $nowPlaying = collect($tmdbService->getNowPlaying());
-        $upcoming = collect($tmdbService->getUpcoming());
-
-        // Exclude movies already in our database (i.e. already seen)
-        $seenTmdbIds = Movie::whereNotNull('tmdb_id')->pluck('tmdb_id')->flip();
-        $pool = $nowPlaying
-            ->merge($upcoming)
-            ->unique('id')
-            ->reject(fn ($m) => $seenTmdbIds->has($m['id']))
-            ->shuffle();
-
-        $genreMap = [
-            'Action' => 28, 'Adventure' => 12, 'Animation' => 16, 'Comedy' => 35, 'Crime' => 80,
-            'Documentary' => 99, 'Drama' => 18, 'Family' => 10751, 'Fantasy' => 14, 'History' => 36,
-            'Horror' => 27, 'Music' => 10402, 'Mystery' => 9648, 'Romance' => 10749,
-            'Science Fiction' => 878, 'TV Movie' => 10770, 'Thriller' => 53, 'War' => 10752, 'Western' => 37,
-        ];
-
-        $topGenreId = $genreMap[$topGenre] ?? null;
-
-        if ($topGenreId) {
-            $recommendations = $pool->filter(fn ($movie) => in_array($topGenreId, $movie['genre_ids'] ?? []))->take(4);
-
-            // Pad with unseen randoms if not enough genre matches
-            if ($recommendations->count() < 4) {
-                $recommendations = $recommendations->merge(
-                    $pool->whereNotIn('id', $recommendations->pluck('id'))->take(4 - $recommendations->count())
-                );
-            }
-        } else {
-            $recommendations = $pool->take(4);
-        }
-
-        // 15. Rewatch Radar
-        $rewatchRadar = null;
-        $watchlistWithCollections = WatchlistMovie::whereNotNull('collection_id')->get();
-
-        foreach ($watchlistWithCollections as $watchlistMovie) {
-            $collection = app(TmdbService::class)->getCollection($watchlistMovie->collection_id);
-            if (! $collection) {
-                continue;
-            }
-
-            $parts = collect($collection['parts'] ?? [])
-                ->sortBy('release_date')
-                ->values();
-
-            $targetIndex = $parts->search(fn ($p) => $p['id'] === $watchlistMovie->tmdb_id);
-
-            if ($targetIndex !== false && $targetIndex > 0) {
-                $prev = $parts[$targetIndex - 1];
-                $rewatchRadar = [
-                    'watchlist_title' => $watchlistMovie->title,
-                    'prev_title' => $prev['title'],
-                    'prev_poster' => $prev['poster_path'] ?? null,
-                    'prev_year' => isset($prev['release_date']) ? substr($prev['release_date'], 0, 4) : null,
-                    'collection_name' => $collection['name'],
-                ];
-                break;
-            }
-        }
+        $currentPayer = User::where('is_current_payer', true)->first();
 
         return view('dashboard', [
             'totalShowings' => $totalShowings,
@@ -218,8 +156,7 @@ class DashboardController extends Controller
             'topActorCount' => $actorCounts[$topActor] ?? 0,
             'projectedMovies' => $projectedMovies,
             'projectedSpend' => $projectedSpend,
-            'recommendations' => $recommendations,
-            'rewatchRadar' => $rewatchRadar,
+            'currentPayer' => $currentPayer,
         ]);
     }
 }

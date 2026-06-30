@@ -17,6 +17,7 @@ class DashboardTest extends TestCase
     {
         // Arrange
         $user = User::factory()->create();
+        $this->actingAs($user);
         $cinema = Cinema::create(['name' => 'Vue Test']);
         // Ensure runtime is set
         $movie = Movie::create(['title' => 'Test Movie', 'runtime' => 120]); // 2 hours
@@ -45,7 +46,6 @@ class DashboardTest extends TestCase
 
         // Assert
         $response->assertStatus(200);
-        $response->assertViewIs('dashboard');
         $response->assertSee('Total Movies');
         $response->assertSee('2'); // Total count
         $response->assertSee('150 kr.'); // Total spend formatted

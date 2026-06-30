@@ -51,7 +51,7 @@
                     </div>
                     <div class="bg-noir-950 p-4 rounded border border-gold-900/50 text-center flex-shrink-0">
                         <p class="text-[10px] text-gold-600 uppercase tracking-widest mb-1">Snack Payer</p>
-                        <p class="text-lg font-bold text-gold-400">{{ $nextShowing->popcornPayer->username ?? 'Unknown' }}</p>
+                        <p class="text-lg font-bold text-gold-400">{{ $currentPayer->username ?? 'No One Set' }}</p>
                     </div>
                 </div>
             </div>
@@ -244,55 +244,6 @@
             </div>
         </div>
 
-        <!-- Recommendations -->
-        @if($recommendations->isNotEmpty())
-        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-4 sm:p-6 shadow-lg shadow-gold-900/20 mb-8">
-            <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider">In Theaters: You Should See</h2>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                @foreach($recommendations as $movie)
-                <div class="relative group overflow-hidden rounded border border-gold-900/50">
-                    @if(!empty($movie['poster_path']))
-                    <img src="https://image.tmdb.org/t/p/w185{{ $movie['poster_path'] }}" class="w-full h-36 object-cover transition duration-300 group-hover:scale-105">
-                    @else
-                    <div class="w-full h-48 bg-noir-950 flex items-center justify-center text-gold-800 text-xs text-center p-2">{{ $movie['title'] }}</div>
-                    @endif
-                    <div class="absolute inset-0 bg-gradient-to-t from-noir-950 via-noir-950/50 to-transparent opacity-0 group-hover:opacity-100 transition duration-300 flex items-end p-3">
-                        <span class="text-gold-100 font-bold text-sm leading-tight drop-shadow-md">{{ $movie['title'] }}</span>
-                    </div>
-                </div>
-                @endforeach
-            </div>
-        </div>
-        @endif
 
-        {{-- Rewatch Radar --}}
-        @if($rewatchRadar)
-        <div class="bg-noir-900/90 deco-border-metallic border-2 rounded-lg p-4 sm:p-6 shadow-lg shadow-gold-900/20 mb-8">
-            <h2 class="text-xl font-bold font-display text-gold-500 mb-4 tracking-wider flex items-center gap-2">
-                <svg class="w-5 h-5 text-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                </svg>
-                Rewatch Radar
-            </h2>
-            <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 text-center sm:text-left">
-                @if($rewatchRadar['prev_poster'])
-                <img src="https://image.tmdb.org/t/p/w200{{ $rewatchRadar['prev_poster'] }}"
-                    class="w-24 sm:w-20 rounded shadow-lg shadow-black flex-shrink-0">
-                @endif
-                <div>
-                    <p class="text-gold-600 text-[10px] uppercase tracking-widest mb-1">Before you see…</p>
-                    <p class="text-gold-300 font-bold font-display text-lg leading-tight">{{ $rewatchRadar['watchlist_title'] }}</p>
-                    <p class="text-gold-600 text-xs mt-3">…time to rewatch</p>
-                    <p class="text-gold-100 font-bold font-display text-xl mt-0.5 leading-tight">
-                        {{ $rewatchRadar['prev_title'] }}
-                        @if($rewatchRadar['prev_year'])
-                        <span class="text-gold-700 text-sm font-normal">({{ $rewatchRadar['prev_year'] }})</span>
-                        @endif
-                    </p>
-                    <p class="text-gold-700 text-[10px] mt-2 italic opacity-60">Part of the {{ $rewatchRadar['collection_name'] }}</p>
-                </div>
-            </div>
-        </div>
-        @endif
     </div>
 </x-layouts.app>

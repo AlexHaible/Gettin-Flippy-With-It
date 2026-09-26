@@ -26,6 +26,16 @@ class User extends Authenticatable implements HasPasskeys
         'is_current_payer',
     ];
 
+    /**
+     * Users authenticate with passkeys only and have no password column.
+     * Return an empty string so the remember-me cookie hash check doesn't receive null.
+     */
+    #[Override]
+    public function getAuthPassword(): string
+    {
+        return '';
+    }
+
     #[Override]
     public function passkeys(): HasMany
     {

@@ -1,5 +1,8 @@
 <?php
 
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
+use Pest\Browser\Api\PendingAwaitablePage;
 use Tests\TestCase;
 
 /*
@@ -16,6 +19,18 @@ use Tests\TestCase;
 pest()->extend(TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
+
+/*
+| Browser tests (pestphp/pest-plugin-browser) are served by an HTTP server that runs inside
+| the test process, so they share the in-memory database and the container bindings of the
+| test. Outgoing HTTP (TMDB, chat webhooks) is blocked so a test can never reach a real API.
+*/
+pest()->extend(TestCase::class)
+    ->use(RefreshDatabase::class)
+    ->beforeEach(function () {
+        Http::preventStrayRequests();
+    })
+    ->in('Browser');
 
 /*
 |--------------------------------------------------------------------------
@@ -46,4 +61,16 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/**
+ * Visit a page in a browser test with every third-party host (Google Fonts, cdnjs, TMDB
+ * images) routed to a dead proxy, so page loads never wait on the internet. The plugin's
+ * own server on 127.0.0.1 is reached directly.
+ */
+function visitLocal(string $url): PendingAwaitablePage
+{
+    return visit($url, [
+        'proxy' => ['server' => 'http://127.0.0.1:9', 'bypass' => '127.0.0.1,localhost'],
+    ]);
 }

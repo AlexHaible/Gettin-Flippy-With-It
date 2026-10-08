@@ -1,10 +1,10 @@
 <?php
 
+use App\Actions\Auth\GeneratePasskeyRegisterOptions;
 use App\Models\User;
 use Spatie\LaravelPasskeys\Actions\ConfigureCeremonyStepManagerFactoryAction;
 use Spatie\LaravelPasskeys\Actions\FindPasskeyToAuthenticateAction;
 use Spatie\LaravelPasskeys\Actions\GeneratePasskeyAuthenticationOptionsAction;
-use Spatie\LaravelPasskeys\Actions\GeneratePasskeyRegisterOptionsAction;
 use Spatie\LaravelPasskeys\Actions\StorePasskeyAction;
 use Spatie\LaravelPasskeys\Models\Passkey;
 
@@ -21,7 +21,7 @@ return [
      * by specifying your custom class name here.
      */
     'actions' => [
-        'generate_passkey_register_options' => GeneratePasskeyRegisterOptionsAction::class,
+        'generate_passkey_register_options' => GeneratePasskeyRegisterOptions::class,
         'store_passkey' => StorePasskeyAction::class,
         'generate_passkey_authentication_options' => GeneratePasskeyAuthenticationOptionsAction::class,
         'find_passkey' => FindPasskeyToAuthenticateAction::class,

@@ -19,11 +19,11 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::get('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/dashboard', Dashboard::class)->name('dashboard');
-    Route::get('/showings', ShowingsList::class)->name('showings');
-    Route::get('/watchlist', Watchlist::class)->name('watchlist');
-    Route::get('/wrapped/{year?}', Wrapped::class)->name('wrapped');
-    Route::get('/browse', Browse::class)->name('browse');
+    Route::livewire('/dashboard', Dashboard::class)->name('dashboard');
+    Route::livewire('/showings', ShowingsList::class)->name('showings');
+    Route::livewire('/watchlist', Watchlist::class)->name('watchlist');
+    Route::livewire('/wrapped/{year?}', Wrapped::class)->name('wrapped');
+    Route::livewire('/browse', Browse::class)->name('browse');
 
     Route::get('/actor/{name}', [EntityController::class, 'actor'])->name('actor');
     Route::get('/genre/{name}', [EntityController::class, 'genre'])->name('genre');

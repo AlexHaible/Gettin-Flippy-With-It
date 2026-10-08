@@ -28,7 +28,7 @@
             <button
                 wire:click="flip"
                 wire:key="payer-btn"
-                wire:transition.opacity.duration.500ms
+                wire:transition
                 class="group relative w-full max-w-[340px] bg-noir-900 p-2 text-center uppercase tracking-[0.4em] shadow-[inset_0_0_0_1px_var(--color-gold-500)]"
             >
                 {{-- Button Label --}}
@@ -58,7 +58,7 @@
 
         @else
             {{-- STATIC CARD --}}
-            <div wire:key="payer-static" wire:transition.opacity.duration.500ms
+            <div wire:key="payer-static" wire:transition
                  class="relative w-full max-w-[340px] px-8 py-10 bg-noir-900 deco-border-metallic border-2 shadow-2xl flex flex-col items-center"
             >
 

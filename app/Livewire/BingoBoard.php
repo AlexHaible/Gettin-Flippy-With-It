@@ -2,28 +2,26 @@
 
 namespace App\Livewire;
 
+use App\Actions\ToggleBingoGoal;
 use App\Models\BingoGoal;
+use Illuminate\Contracts\View\View;
 use Livewire\Component;
 
 class BingoBoard extends Component
 {
     public int $year;
 
-    public function mount()
+    public function mount(): void
     {
         $this->year = now()->year;
     }
 
-    public function toggle(int $goalId)
+    public function toggle(int $goalId, ToggleBingoGoal $toggleBingoGoal): void
     {
-        $goal = BingoGoal::findOrFail($goalId);
-        
-        if ($goal->type !== 'free_square') {
-            $goal->update(['is_completed' => !$goal->is_completed]);
-        }
+        $toggleBingoGoal(BingoGoal::findOrFail($goalId));
     }
 
-    public function render()
+    public function render(): View
     {
         $goals = BingoGoal::where('year', $this->year)
             ->orderBy('position')

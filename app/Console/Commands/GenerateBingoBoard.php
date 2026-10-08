@@ -32,11 +32,11 @@ class GenerateBingoBoard extends Command
 
         foreach ($goals as $i => $goal) {
             BingoGoal::create([
-                'year'         => $year,
-                'position'     => $i + 1,
-                'type'         => $goal['type'],
+                'year' => $year,
+                'position' => $i + 1,
+                'type' => $goal['type'],
                 'target_value' => $goal['target_value'] ?? null,
-                'title'        => $goal['title'],
+                'title' => $goal['title'],
                 // Free square is always pre-completed
                 'is_completed' => $goal['type'] === 'free_square',
             ]);
@@ -50,16 +50,16 @@ class GenerateBingoBoard extends Command
     {
         // ── Static goals (always present) ──────────────────────────────────
         $static = collect([
-            ['type' => 'runtime',         'target_value' => '180', 'title' => 'Epic Marathon (3+ hours)'],
-            ['type' => 'mutual_liked',    'target_value' => null,  'title' => 'Unanimous Masterpiece'],
-            ['type' => 'mutual_disliked', 'target_value' => null,  'title' => 'Mutual Regret'],
-            ['type' => 'runtime',         'target_value' => '150', 'title' => 'Long Night (2.5+ hours)'],
+            ['type' => 'runtime', 'target_value' => '180', 'title' => 'Epic Marathon (3+ hours)'],
+            ['type' => 'mutual_liked', 'target_value' => null, 'title' => 'Unanimous Masterpiece'],
+            ['type' => 'mutual_disliked', 'target_value' => null, 'title' => 'Mutual Regret'],
+            ['type' => 'runtime', 'target_value' => '150', 'title' => 'Long Night (2.5+ hours)'],
         ]);
 
         // ── Genre goals (pull from movies we already know about) ──────────
         $knownGenres = Movie::whereNotNull('genres')
             ->get()
-            ->flatMap(fn ($m) => json_decode($m->genres, true) ?? [])
+            ->flatMap(fn (Movie $m) => $m->genres ?? [])
             ->filter()
             ->countBy()
             ->sortDesc()
@@ -75,7 +75,7 @@ class GenerateBingoBoard extends Command
         // ── Actor goals (top actors from your history) ─────────────────────
         $knownActors = Movie::whereNotNull('cast')
             ->get()
-            ->flatMap(fn ($m) => json_decode($m->cast, true) ?? [])
+            ->flatMap(fn (Movie $m) => $m->cast ?? [])
             ->filter()
             ->countBy()
             ->sortDesc()

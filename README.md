@@ -33,7 +33,7 @@ This application is not a generic tracker. It enforces a strict fairness protoco
 -   Composer & Node.js
 -   **Hardware**: A device with Biometric support (TouchID/FaceID) for Passkeys.
 -   Google Cloud Service Account (Calendar API)
--   Gemini API Key
+-   Claude API Key (from the Claude Console, https://platform.claude.com)
 -   TMDB API Key
 
 ### Installation
@@ -52,7 +52,7 @@ This application is not a generic tracker. It enforces a strict fairness protoco
     ```ini
     GOOGLE_CALENDAR_ID=...
     GOOGLE_CALENDAR_CREDENTIALS_B64=...
-    GEMINI_API_KEY=...
+    CLAUDE_API_KEY=...
     TMDB_API_KEY=...
     ```
 

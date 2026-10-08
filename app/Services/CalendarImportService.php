@@ -6,159 +6,210 @@ use App\Models\Cinema;
 use App\Models\Movie;
 use App\Models\Showing;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Http;
+use Exception;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Spatie\GoogleCalendar\Event;
 
 class CalendarImportService
 {
-    public function __construct(protected TmdbService $tmdbService) {}
+    private const UNKNOWN_MOVIE = 'Unknown Movie';
+
+    private const UNKNOWN_CINEMA = 'Unknown Cinema';
+
+    public function __construct(
+        protected TmdbService $tmdbService,
+        protected EventParser $parser,
+        protected WebhookNotifier $notifier,
+    ) {}
 
     public function import(): void
     {
         Log::info('Starting Calendar Import...');
+
         // Get the Service Account Email to filter for invites
         $serviceAccountEmail = config('google-calendar.auth_profiles.service_account.credentials_json.client_email');
 
         if (empty($serviceAccountEmail)) {
-            throw new \Exception('Service Account Email not found. Check GOOGLE_CALENDAR_CREDENTIALS_B64 in .env.');
+            throw new Exception('Service Account Email not found. Check GOOGLE_CALENDAR_CREDENTIALS_B64 in .env.');
         }
 
         // Fetch events from the configured User Calendar ID
         $calendarId = config('google-calendar.calendar_id');
 
         if (empty($calendarId)) {
-            throw new \Exception('Calendar ID not found. Check GOOGLE_CALENDAR_ID in .env.');
+            throw new Exception('Calendar ID not found. Check GOOGLE_CALENDAR_ID in .env.');
         }
 
-        // Use the 'q' parameter to filter by the Service Account Email on the server side.
-        // This significantly reduces data transfer by only getting events matching the email.
-        $this->log('Using Service Account: '.$serviceAccountEmail);
-        $this->log('Using Calendar ID: '.$calendarId);
+        Log::info('Using Service Account: '.$serviceAccountEmail);
+        Log::info('Using Calendar ID: '.$calendarId);
 
+        foreach ($this->fetchEvents($serviceAccountEmail, $calendarId) as $event) {
+            if ($this->isInvited($event, $serviceAccountEmail)) {
+                $this->importEvent($event);
+            }
+        }
+    }
+
+    /**
+     * Fetch events from Google Calendar, using the 'q' parameter to filter by the
+     * Service Account Email on the server side. This significantly reduces data
+     * transfer by only getting events matching the email.
+     */
+    private function fetchEvents(string $serviceAccountEmail, string $calendarId): Collection
+    {
         try {
-            $this->log('Fetching events from Google Calendar (Last 10 years)...');
-            $events = Event::get(Carbon::now()->subYears(10), Carbon::now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
-        } catch (\Exception $e) {
+            Log::info('Fetching events from Google Calendar (Last 10 years)...');
+            $events = Event::get(now()->subYears(10), now()->addYear(), ['q' => $serviceAccountEmail], $calendarId);
+        } catch (Exception $e) {
             Log::error('Error fetching events: '.$e->getMessage());
-            throw new \Exception('Error fetching events: '.$e->getMessage());
+            throw new Exception('Error fetching events: '.$e->getMessage());
         }
 
         $count = count($events);
-        $this->log('Fetched '.$count.' events from Google Calendar.');
+        Log::info('Fetched '.$count.' events from Google Calendar.');
 
         if ($count === 0) {
-            $this->log("WARNING: No events found! Please ensure '{$serviceAccountEmail}' is added as an attendee to your movie events.");
+            Log::info("WARNING: No events found! Please ensure '{$serviceAccountEmail}' is added as an attendee to your movie events.");
         }
 
-        foreach ($events as $event) {
-            // FILTER: duplicate check for processing loop
-            $attendees = $event->attendees ?? [];
-            $isInvited = collect($attendees)->contains(function ($attendee) use ($serviceAccountEmail) {
-                return $attendee->email === $serviceAccountEmail;
-            });
+        return $events;
+    }
 
-            if (! $isInvited) {
-                continue;
+    /**
+     * @param  object  $event  A Google Calendar event.
+     */
+    private function isInvited(object $event, string $serviceAccountEmail): bool
+    {
+        return collect($event->attendees ?? [])
+            ->contains(fn ($attendee) => $attendee->email === $serviceAccountEmail);
+    }
+
+    /**
+     * @param  object  $event  A Google Calendar event.
+     */
+    private function importEvent(object $event): void
+    {
+        // IDEMPOTENCY CHECK:
+        // Check if we have already imported this specific Google Event ID.
+        $existingShowing = Showing::with(['movie', 'cinema'])->where('google_event_id', $event->id)->first();
+
+        if ($existingShowing) {
+            // If it exists and has valid data, skip it.
+            // If it is "Unknown", we want to re-process it to try and fix it.
+            $isUnknown = $this->isUnknown($existingShowing);
+
+            $this->backfillMetadata($existingShowing);
+
+            if (! $isUnknown) {
+                return;
             }
 
-            // IDEMPOTENCY CHECK:
-            // Check if we have already imported this specific Google Event ID.
-            $existingShowing = Showing::with(['movie', 'cinema'])->where('google_event_id', $event->id)->first();
+            Log::info("Re-processing 'Unknown' event: ".($event->summary ?? 'Unknown'));
+        } else {
+            Log::info('Processing: '.($event->summary ?? 'Unknown'));
+        }
 
-            if ($existingShowing) {
-                // If it exists and has valid data, skip it.
-                // If it is "Unknown", we want to re-process it to try and fix it.
-                $isUnknown = ($existingShowing->movie && $existingShowing->movie->title === 'Unknown Movie') ||
-                    ($existingShowing->cinema && $existingShowing->cinema->name === 'Unknown Cinema');
+        $showing = $this->persistShowing($event, $this->parseEvent($event));
 
-                // BACKFILL: Check if we need to fetch metadata (Runtime, Poster, Genres) for existing valid movies
-                if ($existingShowing->movie && $existingShowing->movie->title !== 'Unknown Movie') {
-                    if (! $existingShowing->movie->runtime || ! $existingShowing->movie->poster_path || ! $existingShowing->movie->genres) {
-                        $this->log('Backfilling metadata for: '.$existingShowing->movie->title);
-                        $this->fetchMovieMetadata($existingShowing->movie);
-                    }
-                }
+        if ($showing->wasRecentlyCreated && $showing->start_time > now()) {
+            $this->notifyNewShowing($showing);
+        }
+    }
 
-                if (! $isUnknown) {
-                    continue;
-                }
-                echo "Re-processing 'Unknown' event: ".($event->summary ?? 'Unknown')."\n";
-            } else {
-                echo 'Processing: '.($event->summary ?? 'Unknown')."\n";
-            }
+    private function isUnknown(Showing $showing): bool
+    {
+        return ($showing->movie && $showing->movie->title === self::UNKNOWN_MOVIE)
+            || ($showing->cinema && $showing->cinema->name === self::UNKNOWN_CINEMA);
+    }
 
-            $title = $event->summary ?? 'Unknown Title';
-            $location = $event->location ?? 'Unknown Location';
-            $description = $event->description ?? '';
+    /**
+     * Fetch metadata (Runtime, Poster, Genres) for existing valid movies that are missing it.
+     */
+    private function backfillMetadata(Showing $showing): void
+    {
+        $movie = $showing->movie;
 
-            // Use LLM to parse the description
-            $parser = app(EventParser::class);
-            try {
-                $parsedData = $parser->parse($title, $location, $description);
-            } catch (\Exception $e) {
-                $this->log("Error parsing description for event '{$title}': ".$e->getMessage());
-                // Fallback to empty array to allow partial import or skip?
-                // For now, let's treat it as empty data and rely on defaults/nulls
-                $parsedData = [];
-            }
+        if (! $movie || $movie->title === self::UNKNOWN_MOVIE) {
+            return;
+        }
 
-            if (! is_array($parsedData)) {
-                $parsedData = [];
-            }
+        if (! $movie->runtime || ! $movie->poster_path || $movie->genres === null) {
+            Log::info('Backfilling metadata for: '.$movie->title);
+            $this->fetchMovieMetadata($movie);
+        }
+    }
 
-            // Map names to User IDs (Alex = 1, Friend = 2)
-            $ticketPayerId = $this->resolveUser($parsedData['ticket_payer'] ?? null);
-            // Use snack_payer for both popcorn and soda
-            $snackPayerId = $this->resolveUser($parsedData['snack_payer'] ?? null);
+    /**
+     * Use the LLM to parse the event. On failure, fall back to an empty array and
+     * rely on defaults/nulls so the event can still be partially imported.
+     *
+     * @param  object  $event  A Google Calendar event.
+     * @return array<string, mixed>
+     */
+    private function parseEvent(object $event): array
+    {
+        $title = $event->summary ?? 'Unknown Title';
+        $location = $event->location ?? 'Unknown Location';
+        $description = $event->description ?? '';
 
-            // 5. DATA PERSISTENCE
-            // Use firstOrCreate to avoid duplicating Movies and Cinemas.
-            $movie = Movie::firstOrCreate(['title' => $parsedData['movie'] ?? 'Unknown Movie']);
-            $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? 'Unknown Cinema']);
+        try {
+            return $this->parser->parse($title, $location, $description);
+        } catch (Exception $e) {
+            Log::info("Error parsing description for event '{$title}': ".$e->getMessage());
 
-            // Fetch metadata if missing
-            if ((! $movie->runtime || ! $movie->poster_path) && $movie->title !== 'Unknown Movie') {
-                $this->fetchMovieMetadata($movie);
-            }
+            return [];
+        }
+    }
 
-            $showing = Showing::firstOrNew(['google_event_id' => $event->id]);
-            $showing->fill([
-                'user_id' => $ticketPayerId, // Main booker
-                'movie_id' => $movie->id,
-                'cinema_id' => $cinema->id,
-                'start_time' => $event->startDateTime ?? $event->startDate,
-                'price_total' => $parsedData['price'] ?? 0,
-                'hall_name' => $parsedData['hall'] ?? null,
-                'booking_reference' => $parsedData['booking_reference'] ?? null,
-                'seat_numbers' => $parsedData['seats'] ?? null,
-                'popcorn_payer_id' => $snackPayerId,
-                'soda_payer_id' => $snackPayerId,
-            ]);
-            $showing->save();
+    /**
+     * @param  object  $event  A Google Calendar event.
+     * @param  array<string, mixed>  $parsedData
+     */
+    private function persistShowing(object $event, array $parsedData): Showing
+    {
+        $ticketPayerId = $this->resolveUser($parsedData['ticket_payer'] ?? null);
+        // Use snack_payer for both popcorn and soda
+        $snackPayerId = $this->resolveUser($parsedData['snack_payer'] ?? null);
 
-            // Webhook Notification
-            if ($showing->wasRecentlyCreated && $showing->start_time > now()) {
-                try {
-                    $payerName = User::find($snackPayerId)?->username ?? 'Unknown';
-                    $message = "🍿 *Popcorn Protocol*: New movie booked!\n";
-                    $message .= "*{$movie->title}* at {$cinema->name} on ".$showing->start_time->format('l, jS M Y H:i').".\n";
-                    $message .= "It's *{$payerName}*'s turn to buy snacks!";
+        // Use firstOrCreate to avoid duplicating Movies and Cinemas.
+        $movie = Movie::firstOrCreate(['title' => $parsedData['movie'] ?? self::UNKNOWN_MOVIE]);
+        $cinema = Cinema::firstOrCreate(['name' => $parsedData['cinema'] ?? self::UNKNOWN_CINEMA]);
 
-                    $discordWebhook = env('DISCORD_WEBHOOK_URL');
-                    if ($discordWebhook) {
-                        Http::post($discordWebhook, ['content' => str_replace('*', '**', $message)]);
-                    }
+        if ((! $movie->runtime || ! $movie->poster_path) && $movie->title !== self::UNKNOWN_MOVIE) {
+            $this->fetchMovieMetadata($movie);
+        }
 
-                    $slackWebhook = env('SLACK_WEBHOOK_URL');
-                    if ($slackWebhook) {
-                        Http::post($slackWebhook, ['text' => $message]);
-                    }
-                } catch (\Exception $e) {
-                    $this->log('Error dispatching webhooks: '.$e->getMessage());
-                }
-            }
+        $showing = Showing::firstOrNew(['google_event_id' => $event->id]);
+        $showing->fill([
+            'user_id' => $ticketPayerId, // Main booker
+            'movie_id' => $movie->id,
+            'cinema_id' => $cinema->id,
+            'start_time' => $event->startDateTime ?? $event->startDate,
+            'price_total' => $parsedData['price'] ?? 0,
+            'hall_name' => $parsedData['hall'] ?? null,
+            'booking_reference' => $parsedData['booking_reference'] ?? null,
+            'seat_numbers' => $parsedData['seats'] ?? null,
+            'popcorn_payer_id' => $snackPayerId,
+            'soda_payer_id' => $snackPayerId,
+        ]);
+        $showing->save();
+
+        return $showing;
+    }
+
+    private function notifyNewShowing(Showing $showing): void
+    {
+        try {
+            $payerName = User::find($showing->popcorn_payer_id)?->username ?? 'Unknown';
+
+            $message = "🍿 *Popcorn Protocol*: New movie booked!\n";
+            $message .= "*{$showing->movie->title}* at {$showing->cinema->name} on ".$showing->start_time->format('l, jS M Y H:i').".\n";
+            $message .= "It's *{$payerName}*'s turn to buy snacks!";
+
+            $this->notifier->notify($message);
+        } catch (Exception $e) {
+            Log::info('Error dispatching webhooks: '.$e->getMessage());
         }
     }
 
@@ -166,52 +217,53 @@ class CalendarImportService
     {
         try {
             $searchResult = $this->tmdbService->searchMovie($movie->title);
-            if ($searchResult && isset($searchResult['id'])) {
-                $details = $this->tmdbService->getMovieDetails($searchResult['id']);
-                if ($details) {
-                    $genres = collect($details['genres'] ?? [])->pluck('name')->toJson();
-                    $director = collect($details['credits']['crew'] ?? [])->firstWhere('job', 'Director')['name'] ?? null;
-                    $cast = collect($details['credits']['cast'] ?? [])->take(3)->pluck('name')->toJson();
 
-                    $movie->update([
-                        'tmdb_id' => $details['id'],
-                        'runtime' => $details['runtime'] ?? null,
-                        'poster_path' => $details['poster_path'] ?? null,
-                        'backdrop_path' => $details['backdrop_path'] ?? null,
-                        'genres' => $genres,
-                        'director' => $director,
-                        'cast' => $cast,
-                    ]);
-                    $this->log("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins, poster, backdrop, genres, cast');
-                }
+            if (! $searchResult || ! isset($searchResult['id'])) {
+                return;
             }
-        } catch (\Exception $e) {
-            $this->log("Error fetching TMDB metadata for '{$movie->title}': ".$e->getMessage());
+
+            $details = $this->tmdbService->getMovieDetails($searchResult['id']);
+
+            if (! $details) {
+                return;
+            }
+
+            $movie->update([
+                'tmdb_id' => $details['id'],
+                'runtime' => $details['runtime'] ?? null,
+                'poster_path' => $details['poster_path'] ?? null,
+                'backdrop_path' => $details['backdrop_path'] ?? null,
+                'genres' => collect($details['genres'] ?? [])->pluck('name')->all(),
+                'director' => collect($details['credits']['crew'] ?? [])->firstWhere('job', 'Director')['name'] ?? null,
+                'cast' => collect($details['credits']['cast'] ?? [])->take(3)->pluck('name')->all(),
+            ]);
+
+            Log::info("Updated metadata for '{$movie->title}': ".($details['runtime'] ?? '?').' mins, poster, backdrop, genres, cast');
+        } catch (Exception $e) {
+            Log::info("Error fetching TMDB metadata for '{$movie->title}': ".$e->getMessage());
         }
     }
 
+    /**
+     * Map a parsed payer name to a user ID.
+     */
     private function resolveUser(?string $name): int
     {
         // 1. If name is explicit, map it
         if ($name) {
             if (stripos($name, 'Alex') !== false) {
-                return 1;
+                return User::ALEX_ID;
             }
+
             if (stripos($name, 'Casper') !== false || stripos($name, 'Friend') !== false) {
-                return 2;
+                return User::CASPER_ID;
             }
         }
 
         // 2. Fallback: Use the user marked as 'is_current_payer'
         $payer = User::where('is_current_payer', true)->first();
 
-        // 3. Absolute fallback to ID 1 (Alex) if DB state is weird
-        return $payer ? $payer->id : 1;
-    }
-
-    private function log(string $message): void
-    {
-        echo $message."\n";
-        Log::info($message);
+        // 3. Absolute fallback to Alex if DB state is weird
+        return $payer ? $payer->id : User::ALEX_ID;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 
 class TmdbService
@@ -17,38 +18,7 @@ class TmdbService
 
     public function searchMovie(string $title): ?array
     {
-        if (! $this->apiKey) {
-            return null;
-        }
-
-        $response = Http::get("{$this->baseUrl}/search/movie", [
-            'api_key' => $this->apiKey,
-            'query' => $title,
-        ]);
-
-        if ($response->successful()) {
-            return $response->json('results.0');
-        }
-
-        return null;
-    }
-
-    public function getMovieDetails(int $tmdbId): ?array
-    {
-        if (! $this->apiKey) {
-            return null;
-        }
-
-        $response = Http::get("{$this->baseUrl}/movie/{$tmdbId}", [
-            'api_key' => $this->apiKey,
-            'append_to_response' => 'credits',
-        ]);
-
-        if ($response->successful()) {
-            return $response->json();
-        }
-
-        return null;
+        return $this->searchMovies($title)[0] ?? null;
     }
 
     public function searchMovies(string $title): array
@@ -57,12 +27,20 @@ class TmdbService
             return [];
         }
 
-        $response = Http::get("{$this->baseUrl}/search/movie", [
-            'api_key' => $this->apiKey,
-            'query' => $title,
-        ]);
+        $response = $this->request()->get('search/movie', ['query' => $title]);
 
         return $response->successful() ? $response->json('results', []) : [];
+    }
+
+    public function getMovieDetails(int $tmdbId): ?array
+    {
+        if (! $this->apiKey) {
+            return null;
+        }
+
+        $response = $this->request()->get("movie/{$tmdbId}", ['append_to_response' => 'credits']);
+
+        return $response->successful() ? $response->json() : null;
     }
 
     public function getNowPlaying(): array
@@ -71,9 +49,7 @@ class TmdbService
             return [];
         }
 
-        $response = Http::get("{$this->baseUrl}/movie/now_playing", [
-            'api_key' => $this->apiKey,
-        ]);
+        $response = $this->request()->get('movie/now_playing');
 
         return $response->successful() ? $response->json('results', []) : [];
     }
@@ -84,9 +60,7 @@ class TmdbService
             return [];
         }
 
-        $response = Http::get("{$this->baseUrl}/movie/upcoming", [
-            'api_key' => $this->apiKey,
-        ]);
+        $response = $this->request()->get('movie/upcoming');
 
         return $response->successful() ? $response->json('results', []) : [];
     }
@@ -97,10 +71,13 @@ class TmdbService
             return null;
         }
 
-        $response = Http::get("{$this->baseUrl}/collection/{$collectionId}", [
-            'api_key' => $this->apiKey,
-        ]);
+        $response = $this->request()->get("collection/{$collectionId}");
 
         return $response->successful() ? $response->json() : null;
+    }
+
+    private function request(): PendingRequest
+    {
+        return Http::baseUrl($this->baseUrl)->withQueryParameters(['api_key' => $this->apiKey]);
     }
 }

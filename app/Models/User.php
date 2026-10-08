@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -15,6 +16,10 @@ class User extends Authenticatable implements HasPasskeys
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, InteractsWithPasskeys, Notifiable;
+
+    public const ALEX_ID = 1;
+
+    public const CASPER_ID = 2;
 
     /**
      * The attributes that are mass assignable.
@@ -36,18 +41,12 @@ class User extends Authenticatable implements HasPasskeys
         return '';
     }
 
-    #[Override]
-    public function passkeys(): HasMany
-    {
-        return $this->hasMany(Passkey::class);
-    }
-
     public function ratings(): HasMany
     {
         return $this->hasMany(Rating::class);
     }
 
-    public function watchlistMovies()
+    public function watchlistMovies(): BelongsToMany
     {
         return $this->belongsToMany(WatchlistMovie::class, 'watchlist_movie_user')->withTimestamps();
     }

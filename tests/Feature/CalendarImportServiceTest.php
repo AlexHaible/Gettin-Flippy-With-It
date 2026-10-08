@@ -59,10 +59,10 @@ class CalendarImportServiceTest extends TestCase
         $eventData->attendees = [(object) ['email' => 'service@example.com']];
 
         // 6. Mock HTTP for webhook
-        config(['app.discord_webhook_url' => 'http://discord.test']);
-        config(['app.slack_webhook_url' => 'http://slack.test']);
-        putenv('DISCORD_WEBHOOK_URL=http://discord.test');
-        putenv('SLACK_WEBHOOK_URL=http://slack.test');
+        config([
+            'services.discord.webhook_url' => 'http://discord.test',
+            'services.slack.webhook_url' => 'http://slack.test',
+        ]);
 
         Http::fake([
             'http://discord.test' => Http::response('ok', 200),
@@ -80,7 +80,9 @@ class CalendarImportServiceTest extends TestCase
         $tmdbMock = Mockery::mock(TmdbService::class);
         $tmdbMock->shouldReceive('searchMovie')->andReturn([]);
 
-        $service = new CalendarImportService($tmdbMock);
+        $this->app->instance(TmdbService::class, $tmdbMock);
+
+        $service = $this->app->make(CalendarImportService::class);
         $service->import();
 
         Http::assertSent(function ($request) {

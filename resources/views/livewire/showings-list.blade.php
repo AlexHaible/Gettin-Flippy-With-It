@@ -188,7 +188,7 @@
                         <p style="color:#D4AF37;" class="mt-1 font-semibold text-center md:text-left text-sm">{{ $selectedShowing->cinema->name }} • {{ $selectedShowing->hall_name ?? 'N/A' }}</p>
                         <p style="color:#806921;" class="text-xs mt-1 text-center md:text-left">{{ $selectedShowing->start_time->format('l, jS M Y H:i') }}</p>
                         <div class="mt-3 flex flex-wrap justify-center md:justify-start gap-1.5">
-                            @foreach(json_decode($selectedShowing->movie->genres ?? '[]', true) as $genre)
+                            @foreach($selectedShowing->movie->genres ?? [] as $genre)
                                 <span style="background:#1a1a1a;color:#DDB956;border:1px solid #554616;display:inline-flex;align-items:center;line-height:1;" class="text-[10px] px-2 py-1 rounded font-bold uppercase tracking-wide">{{ $genre }}</span>
                             @endforeach
                         </div>

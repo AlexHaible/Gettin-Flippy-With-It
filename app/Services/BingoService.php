@@ -17,8 +17,8 @@ class BingoService
 
         $movie = $showing->movie;
         $ratings = $showing->ratings;
-        $genres = json_decode($movie->genres ?? '[]', true) ?? [];
-        $cast = json_decode($movie->cast ?? '[]', true) ?? [];
+        $genres = $movie->genres ?? [];
+        $cast = $movie->cast ?? [];
 
         foreach ($goals as $goal) {
             $completed = match ($goal->type) {

@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EntityController;
-use App\Http\Controllers\BingoController;
 use App\Livewire\Browse;
 use App\Livewire\Dashboard;
 use App\Livewire\ShowingsList;
@@ -10,9 +9,7 @@ use App\Livewire\Watchlist;
 use App\Livewire\Wrapped;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('index');
-})->name('index');
+Route::view('/', 'index')->name('index');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
@@ -30,7 +27,6 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/actor/{name}', [EntityController::class, 'actor'])->name('actor');
     Route::get('/genre/{name}', [EntityController::class, 'genre'])->name('genre');
-    Route::get('/bingo', [BingoController::class, 'index'])->name('bingo');
-    Route::get('/archive', fn() => redirect()->route('showings'))->name('archive');
+    Route::view('/bingo', 'bingo')->name('bingo');
+    Route::get('/archive', fn () => redirect()->route('showings'))->name('archive');
 });
-

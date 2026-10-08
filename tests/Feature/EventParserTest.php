@@ -2,60 +2,69 @@
 
 namespace Tests\Feature;
 
+use Anthropic\Messages\Message;
+use Anthropic\Messages\TextBlock;
+use Anthropic\ServiceContracts\MessagesContract;
 use App\Services\EventParser;
-use Gemini\Responses\GenerativeModel\GenerateContentResponse;
-use Gemini\Testing\ClientFake;
+use App\Services\EventParser\ShowingDetails;
+use Mockery;
 use Tests\TestCase;
 
 class EventParserTest extends TestCase
 {
-    public function test_it_can_parse_event_description()
+    private function message(?ShowingDetails $parsed, string $stopReason = 'end_turn'): Message
     {
-        $fakeStructure = [
-            'candidates' => [
-                [
-                    'content' => [
-                        'parts' => [
-                            [
-                                'functionCall' => [
-                                    'name' => 'extract_showing_data',
-                                    'args' => [
-                                        'movie' => 'Inception',
-                                        'cinema' => 'Imperial',
-                                        'hall' => 'Bio 1',
-                                        'price' => 150,
-                                        'ticket_payer' => null,
-                                        'snack_payer' => null,
-                                        'booking_reference' => 'REF123',
-                                        'seats' => 'A1, A2',
-                                    ],
-                                ],
-                            ],
-                        ],
-                        'role' => 'model',
-                    ],
-                    'finishReason' => 'STOP',
-                    'index' => 0,
-                    'safetyRatings' => [],
-                ],
-            ],
-            'usageMetadata' => [
-                'promptTokenCount' => 10,
-                'candidatesTokenCount' => 10,
-                'totalTokenCount' => 20,
-            ],
-        ];
+        $block = TextBlock::with(citations: null, text: '{}');
+        $block->parsed = $parsed;
 
-        $response = GenerateContentResponse::from($fakeStructure);
-        $fakeClient = new ClientFake([$response]);
+        return Message::with(
+            id: 'msg_test',
+            container: null,
+            content: [$block],
+            diagnostics: null,
+            model: 'claude-opus-5-5',
+            stopDetails: null,
+            stopReason: $stopReason,
+            stopSequence: null,
+            usage: ['input_tokens' => 10, 'output_tokens' => 10],
+        );
+    }
 
-        $parser = new EventParser($fakeClient);
-        $result = $parser->parse('Inception', 'Cinema City', 'Some dummy description');
+    public function test_it_can_parse_event_description(): void
+    {
+        $details = new ShowingDetails;
+        $details->movie = 'Inception';
+        $details->cinema = 'Imperial';
+        $details->hall = 'Bio 1';
+        $details->price = 150;
+        $details->booking_reference = 'REF123';
+        $details->seats = 'A1, A2';
+
+        $messages = Mockery::mock(MessagesContract::class);
+        $messages->shouldReceive('create')->once()->andReturn($this->message($details));
+
+        $result = (new EventParser($messages))->parse('Inception', 'Cinema City', 'Some dummy description');
 
         $this->assertEquals('Inception', $result['movie']);
-        // We expect NULL here now, because the parser should return what the LLM gave it.
-        // The Service layer will handle the fallback.
+        $this->assertEquals(150, $result['price']);
+        // The parser returns what the LLM gave it; the service layer handles fallbacks.
         $this->assertNull($result['ticket_payer']);
         $this->assertNull($result['snack_payer']);
+    }
+
+    public function test_it_returns_empty_array_on_refusal(): void
+    {
+        $messages = Mockery::mock(MessagesContract::class);
+        $messages->shouldReceive('create')->once()->andReturn($this->message(null, 'refusal'));
+
+        $this->assertSame([], (new EventParser($messages))->parse('x', 'y', 'z'));
+    }
+
+    public function test_it_returns_empty_array_when_output_is_not_parsed(): void
+    {
+        $messages = Mockery::mock(MessagesContract::class);
+        $messages->shouldReceive('create')->once()->andReturn($this->message(null));
+
+        $this->assertSame([], (new EventParser($messages))->parse('x', 'y', 'z'));
     }
 }

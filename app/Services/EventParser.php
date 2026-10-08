@@ -2,109 +2,67 @@
 
 namespace App\Services;
 
-use Gemini\Contracts\ClientContract;
-use Gemini\Data\FunctionDeclaration;
-use Gemini\Data\Schema;
-use Gemini\Data\Tool;
-use Gemini\Enums\DataType;
+use Anthropic\Core\Exceptions\APIConnectionException;
+use Anthropic\Core\Exceptions\APIStatusException;
+use Anthropic\Core\Exceptions\RateLimitException;
+use Anthropic\ServiceContracts\MessagesContract;
+use App\Services\EventParser\ShowingDetails;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class EventParser
 {
-    public function __construct(protected ?ClientContract $client = null) {}
+    private const SYSTEM_PROMPT = <<<'PROMPT'
+You analyze calendar events and extract movie showing details.
 
+Special Rules:
+- If 'IMAX' is in the title, Cinema is 'Vue Fisketorvet' and Hall is 'IMAX'.
+- 'CinemaxX' is now 'Vue Fisketorvet'.
+- Extract 'Sal' number from title if present.
+- The only two people are Alex and Casper; return payer fields as those names, or null when the event does not say.
+PROMPT;
+
+    public function __construct(protected MessagesContract $messages) {}
+
+    /**
+     * @return array{movie?: string, cinema?: string, hall?: string, price?: int, ticket_payer?: ?string, snack_payer?: ?string, booking_reference?: ?string, seats?: ?string}
+     */
     public function parse(string $title, string $location, string $description): array
     {
-        // 1. Initialize Client
-        if (! $this->client) {
-            $apiKey = config('services.gemini.api_key');
-            if (! $apiKey) {
-                throw new \Exception('Gemini API Key not specified in config/services.php (.env GEMINI_API_KEY)');
-            }
-            $this->client = \Gemini::client($apiKey);
+        $prompt = "Event Title: $title\nLocation: $location\nDescription: $description";
+
+        $message = retry(
+            3,
+            fn () => $this->messages->create(
+                maxTokens: 2048,
+                messages: [['role' => 'user', 'content' => $prompt]],
+                model: (string) config('services.anthropic.model'),
+                outputConfig: ['effort' => 'low', 'format' => ShowingDetails::class],
+                system: self::SYSTEM_PROMPT,
+            ),
+            1000,
+            $this->isRetryable(...),
+        );
+
+        if ($message->stopReason === 'refusal') {
+            Log::warning('Claude refused to parse calendar event.', ['title' => $title]);
+
+            return [];
         }
 
-        // 2. Define the Function Tool
-        $schema = new Schema(
-            type: DataType::OBJECT,
-            properties: [
-                'movie' => new Schema(
-                    type: DataType::STRING,
-                    description: 'The full title of the movie.'
-                ),
-                'cinema' => new Schema(
-                    type: DataType::STRING,
-                    description: 'The name of the cinema (e.g. Vue Fisketorvet).'
-                ),
-                'hall' => new Schema(
-                    type: DataType::STRING,
-                    description: 'The hall or screen name (e.g. Sal 1, IMAX).'
-                ),
-                'price' => new Schema(
-                    type: DataType::INTEGER,
-                    description: 'The total price in DKK.'
-                ),
-                'ticket_payer' => new Schema(
-                    type: DataType::STRING,
-                    description: 'Name of the person who paid for tickets (Alex or Casper). Return null if unknown.',
-                    nullable: true
-                ),
-                'snack_payer' => new Schema(
-                    type: DataType::STRING,
-                    description: 'Name of the person who paid for snacks. Return null if unknown.',
-                    nullable: true
-                ),
-                'booking_reference' => new Schema(
-                    type: DataType::STRING,
-                    description: 'The booking reference number.',
-                    nullable: true
-                ),
-                'seats' => new Schema(
-                    type: DataType::STRING,
-                    description: 'Comma separated seat numbers (e.g. C1, C2).',
-                    nullable: true
-                ),
-            ],
-            required: ['movie', 'cinema', 'hall', 'price']
-        );
+        $parsed = $message->parsedOutput();
 
-        $functionDeclaration = new FunctionDeclaration(
-            name: 'extract_showing_data',
-            description: 'Extracts movie showing details from a calendar event.',
-            parameters: $schema
-        );
-
-        $tool = new Tool(
-            functionDeclarations: [$functionDeclaration]
-        );
-
-        // 3. Construct the Prompt
-        $prompt = "Analyze this calendar event and extract the movie showing details.\n".
-            "Event Title: $title\n".
-            "Location: $location\n".
-            "Description: $description\n\n".
-            "Special Rules:\n".
-            "- If 'IMAX' is in the title, Cinema is 'Vue Fisketorvet' and Hall is 'IMAX'.\n".
-            "- 'CinemaxX' is now 'Vue Fisketorvet'.\n".
-            "- Extract 'Sal' number from title if present.\n".
-            "- Alex = ID 1, Casper = ID 2 (map names in output if possible, otherwise just names).\n".
-            'Use the extract_showing_data function.';
-
-        // 4. Call Gemini API
-        $response = retry(3, function () use ($prompt, $tool) {
-            return $this->client
-                ->generativeModel('models/gemini-3-flash-preview')
-                ->withTool($tool)
-                ->generateContent($prompt);
-        }, 1000);
-
-        // 5. Extract Function Call Arguments
-        $parts = $response->parts();
-        $part = $parts[0] ?? null;
-
-        if ($part && $part->functionCall && $part->functionCall->name === 'extract_showing_data') {
-            return $part->functionCall->args;
+        if (! $parsed instanceof ShowingDetails) {
+            return [];
         }
 
-        return [];
+        return $parsed->toArray();
+    }
+
+    private function isRetryable(Throwable $e): bool
+    {
+        return $e instanceof RateLimitException
+            || $e instanceof APIConnectionException
+            || ($e instanceof APIStatusException && ($e->status ?? 0) >= 500);
     }
 }

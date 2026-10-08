@@ -47,14 +47,14 @@
     @php
         $topGenres = Cache::remember('nav_genres', 3600, function() {
             return \App\Models\Movie::select('genres')->get()
-                ->flatMap(fn($m) => json_decode($m->genres, true) ?? [])
+                ->flatMap(fn($m) => $m->genres ?? [])
                 ->countBy()
                 ->sortDesc()
                 ->take(8);
         });
         $topActors = Cache::remember('nav_actors', 3600, function() {
             return \App\Models\Movie::select('cast')->get()
-                ->flatMap(fn($m) => json_decode($m->cast, true) ?? [])
+                ->flatMap(fn($m) => $m->cast ?? [])
                 ->countBy()
                 ->sortDesc()
                 ->take(8);

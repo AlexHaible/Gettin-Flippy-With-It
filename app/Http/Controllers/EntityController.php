@@ -3,38 +3,34 @@
 namespace App\Http\Controllers;
 
 use App\Models\Showing;
+use Closure;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
 
 class EntityController extends Controller
 {
-    public function actor(string $name)
+    public function actor(string $name): View
     {
-        $showings = Showing::with(['movie', 'cinema'])
-            ->whereHas('movie', function ($query) use ($name) {
-                // Since cast is a JSON string of an array of strings, we can use LIKE
-                // Or SQLite JSON extraction if needed. LIKE is safe enough for exact name matches.
-                $query->where('cast', 'LIKE', '%"'.$name.'"%');
-            })
-            ->orderByDesc('start_time')
-            ->get();
-
-        return view('entity', [
-            'entityType' => 'Actor',
-            'entityName' => $name,
-            'showings' => $showings,
-        ]);
+        return $this->showingsMatching('Actor', $name, fn (Builder $query) => $query->withActor($name));
     }
 
-    public function genre(string $name)
+    public function genre(string $name): View
+    {
+        return $this->showingsMatching('Genre', $name, fn (Builder $query) => $query->withGenre($name));
+    }
+
+    /**
+     * @param  Closure(Builder): mixed  $movieConstraint
+     */
+    private function showingsMatching(string $entityType, string $name, Closure $movieConstraint): View
     {
         $showings = Showing::with(['movie', 'cinema'])
-            ->whereHas('movie', function ($query) use ($name) {
-                $query->where('genres', 'LIKE', '%"'.$name.'"%');
-            })
+            ->whereHas('movie', $movieConstraint)
             ->orderByDesc('start_time')
             ->get();
 
         return view('entity', [
-            'entityType' => 'Genre',
+            'entityType' => $entityType,
             'entityName' => $name,
             'showings' => $showings,
         ]);

@@ -2,18 +2,27 @@
 
 namespace App\Models;
 
-use App\Services\BingoService;
+use App\Observers\ShowingObserver;
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[ObservedBy(ShowingObserver::class)]
 class Showing extends Model
 {
     protected $guarded = [];
 
-    protected $casts = [
-        'start_time' => 'datetime',
-    ];
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'start_time' => 'datetime',
+        ];
+    }
 
     public function user(): BelongsTo
     {
@@ -45,12 +54,22 @@ class Showing extends Model
         return $this->hasMany(Rating::class);
     }
 
-    protected static function booted(): void
+    /**
+     * The showing starting closest to $moment, looking both backwards and forwards.
+     * On an exact tie the past showing wins.
+     */
+    public static function closestTo(CarbonInterface $moment): ?self
     {
-        static::saved(function (Showing $showing) {
-            // Reload fresh relations so BingoService always has up-to-date data
-            $showing->load(['movie', 'cinema', 'ratings']);
-            app(BingoService::class)->evaluate($showing);
-        });
+        $past = static::where('start_time', '<', $moment)->latest('start_time')->first();
+        $upcoming = static::where('start_time', '>=', $moment)->oldest('start_time')->first();
+
+        if ($past && $upcoming) {
+            $diffPast = $moment->diffInMinutes($past->start_time, true);
+            $diffUpcoming = $moment->diffInMinutes($upcoming->start_time, true);
+
+            return $diffUpcoming < $diffPast ? $upcoming : $past;
+        }
+
+        return $past ?? $upcoming;
     }
 }

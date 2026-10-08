@@ -1,26 +1,7 @@
 <?php
 
-use App\Models\WatchlistMovie;
-use App\Services\CalendarImportService;
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('calendar:import', function (CalendarImportService $importer) {
-    try {
-        $this->info('Starting calendar import...');
-        $importer->import();
-        $this->info('Calendar import completed successfully.');
-    } catch (Exception $e) {
-        $this->error('Error importing calendar: '.$e->getMessage());
-    }
-})->purpose('Fetch and parse Google Calendar events for movie nights')
-    ->everyFiveMinutes();
+Schedule::command('calendar:import')->everyFiveMinutes();
 
-Artisan::command('watchlist:cleanup', function () {
-    $this->info('Starting watchlist cleanup...');
-    $count = WatchlistMovie::whereNotNull('release_date')
-        ->where('release_date', '<', today())
-        ->delete();
-    $this->info("Watchlist cleanup completed. Removed {$count} released movies.");
-})->purpose('Remove movies that have already premiered from the watchlist')
-    ->mondays()->at('00:00');
-
+Schedule::command('watchlist:cleanup')->mondays()->at('00:00');

@@ -2,10 +2,13 @@
 
 namespace App\Livewire;
 
-use App\Models\Rating;
+use App\Actions\RateShowing;
 use App\Models\Showing;
+use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('components.layouts.app')]
 class ShowingsList extends Component
 {
     public int $perPage = 15;
@@ -38,22 +41,19 @@ class ShowingsList extends Component
         $this->selectedShowing = null;
     }
 
-    public function rateShowing(string $score): void
+    public function rateShowing(string $score, RateShowing $rateShowing): void
     {
         if (! $this->selectedShowing) {
             return;
         }
 
-        Rating::updateOrCreate(
-            ['showing_id' => $this->selectedShowing->id, 'user_id' => auth()->id()],
-            ['score' => $score]
-        );
+        $rateShowing($this->selectedShowing, auth()->user(), $score);
 
         $this->selectedShowing->refresh();
         $this->selectedShowing->load(['movie', 'cinema', 'ratings.user']);
     }
 
-    public function render()
+    public function render(): View
     {
         // Grid mode loads everything at once for grouping by year;
         // list mode uses cursor-based pagination for infinite scroll.
@@ -61,7 +61,6 @@ class ShowingsList extends Component
             ? Showing::with(['movie', 'cinema', 'ratings'])->orderByDesc('start_time')->get()
             : Showing::with(['movie', 'cinema', 'ratings.user'])->orderByDesc('start_time')->paginate($this->perPage);
 
-        return view('livewire.showings-list', compact('showings'))
-            ->layout('components.layouts.app');
+        return view('livewire.showings-list', compact('showings'));
     }
 }

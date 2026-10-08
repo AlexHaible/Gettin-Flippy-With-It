@@ -2,18 +2,22 @@
 
 namespace App\Livewire;
 
+use App\Actions\Watchlist\AddMovieToWatchlist;
+use App\Actions\Watchlist\ToggleWatchlistHype;
 use App\Models\WatchlistMovie;
 use App\Services\TmdbService;
-use Illuminate\Support\Facades\Http;
+use Illuminate\Contracts\View\View;
+use Livewire\Attributes\Layout;
 use Livewire\Component;
 
+#[Layout('components.layouts.app')]
 class Watchlist extends Component
 {
-    public $searchQuery = '';
+    public string $searchQuery = '';
 
-    public $searchResults = [];
+    public array $searchResults = [];
 
-    public function updatedSearchQuery()
+    public function updatedSearchQuery(): void
     {
         if (strlen($this->searchQuery) < 3) {
             $this->searchResults = [];
@@ -21,79 +25,29 @@ class Watchlist extends Component
             return;
         }
 
-        $tmdbService = app(TmdbService::class);
-        $this->searchResults = collect($tmdbService->searchMovies($this->searchQuery))->take(5)->toArray();
+        $this->searchResults = collect(app(TmdbService::class)->searchMovies($this->searchQuery))->take(5)->toArray();
     }
 
-    public function addMovie($tmdbId, $title, $posterPath, $releaseDate)
+    public function addMovie(int $tmdbId, string $title, ?string $posterPath, ?string $releaseDate, AddMovieToWatchlist $addMovieToWatchlist): void
     {
-        // Fetch full details to get the collection_id if available
-        $details = app(TmdbService::class)->getMovieDetails($tmdbId);
-        $collectionId = $details['belongs_to_collection']['id'] ?? null;
-
-        $movie = WatchlistMovie::firstOrCreate(
-            ['tmdb_id' => $tmdbId],
-            [
-                'title' => $title,
-                'poster_path' => $posterPath,
-                'release_date' => $releaseDate,
-                'collection_id' => $collectionId,
-            ]
-        );
-
-        // Update collection_id if missing on an existing record
-        if ($movie->collection_id === null && $collectionId) {
-            $movie->update(['collection_id' => $collectionId]);
-        }
-
-        $userId = auth()->id();
-
-        if (! $movie->users()->where('user_id', $userId)->exists()) {
-            $movie->users()->attach($userId);
-
-            if ($movie->users()->count() >= 2) {
-                $this->dispatchMutualHypeWebhook($movie);
-            }
-        }
+        $addMovieToWatchlist(auth()->user(), $tmdbId, $title, $posterPath, $releaseDate);
 
         $this->searchQuery = '';
         $this->searchResults = [];
     }
 
-    public function toggleHype($movieId)
+    public function toggleHype(int $movieId, ToggleWatchlistHype $toggleWatchlistHype): void
     {
-        $movie = WatchlistMovie::find($movieId);
-        $userId = auth()->id();
-
-        if ($movie->users()->where('user_id', $userId)->exists()) {
-            $movie->users()->detach($userId);
-        } else {
-            $movie->users()->attach($userId);
-            if ($movie->users()->count() >= 2) {
-                $this->dispatchMutualHypeWebhook($movie);
-            }
-        }
+        $toggleWatchlistHype(WatchlistMovie::findOrFail($movieId), auth()->user());
     }
 
-    protected function dispatchMutualHypeWebhook($movie)
-    {
-        $discordWebhook = env('DISCORD_WEBHOOK_URL');
-        $slackWebhook = env('SLACK_WEBHOOK_URL');
-
-        $message = "🍿 **MUTUAL HYPE ALERT!** Both Alex and Casper want to see **{$movie->title}**! Time to book tickets!";
-
-        if ($discordWebhook) {
-            Http::post($discordWebhook, ['content' => $message]);
-        }
-        if ($slackWebhook) {
-            Http::post($slackWebhook, ['text' => $message]);
-        }
-    }
-
-    public function render()
+    public function render(): View
     {
         return view('livewire.watchlist', [
-            'watchlistMovies' => WatchlistMovie::with('users')->orderByRaw('release_date IS NULL')->orderBy('release_date')->get(),
-        ])->layout('components.layouts.app');
+            'watchlistMovies' => WatchlistMovie::with('users')
+                ->orderByRaw('release_date IS NULL')
+                ->orderBy('release_date')
+                ->get(),
+        ]);
     }
 }
